@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <title>Just One</title>
+
+    <style>
+        body {
+            background-color: #f5f5f5;
+            width: 600px;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        h4 {
+            color: #cdcdcd;
+            font-size: 42px;
+            letter-spacing: -2px;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            text-align: center;
+        }
+
+        .list {
+            color: #555;
+            font-size: 22px;
+            padding: 0 !important;
+            width: 500px;
+            font-family: courier, monospace;
+            border: 1px solid #dedede;
+        }
+
+        .list li {
+            list-style: none;
+            border-bottom: 1px dotted #ccc;
+            text-indent: 25px;
+            height: auto;
+            padding: 10px;
+            text-transform: capitalize;
+        }
+
+        .list li:hover {
+            background-color: #f0f0f0;
+            -webkit-transition: all 0.2s;
+            -moz-transition: all 0.2s;
+            -ms-transition: all 0.2s;
+            -o-transition: all 0.2s;
+        }
+
+        .lines {
+            border-left: 1px solid #ffaa9f;
+            border-right: 1px solid #ffaa9f;
+            width: 2px;
+            float: left;
+            height: 0px;
+            margin-left: 40px;
+        }
+
+        @keyframes blink {
+
+            /**
+     * At the start of the animation the dot
+     * has an opacity of .2
+     */
+            0% {
+                opacity: .2;
+            }
+
+            /**
+     * At 20% the dot is fully visible and
+     * then fades out slowly
+     */
+            20% {
+                opacity: 1;
+            }
+
+            /**
+     * Until it reaches an opacity of .2 and
+     * the animation can start again
+     */
+            100% {
+                opacity: .2;
+            }
+        }
+
+        .saving span {
+            /**
+     * Use the blink animation, which is defined above
+     */
+            animation-name: blink;
+            /**
+     * The animation should take 1.4 seconds
+     */
+            animation-duration: 1.4s;
+            /**
+     * It will repeat itself forever
+     */
+            animation-iteration-count: infinite;
+            /**
+     * This makes sure that the starting style (opacity: .2)
+     * of the animation is applied before the animation starts.
+     * Otherwise we would see a short flash or would have
+     * to set the default styling of the dots to the same
+     * as the animation. Same applies for the ending styles.
+     */
+            animation-fill-mode: both;
+        }
+
+        .saving span:nth-child(2) {
+            /**
+     * Starts the animation of the third dot
+     * with a delay of .2s, otherwise all dots
+     * would animate at the same time
+     */
+            animation-delay: .2s;
+        }
+
+        .saving span:nth-child(3) {
+            /**
+     * Starts the animation of the third dot
+     * with a delay of .4s, otherwise all dots
+     * would animate at the same time
+     */
+            animation-delay: .4s;
+        }
+    </style>
+</head>
+
+<body>
+    <h4>JUST ONE</h4>
+
+    <div id="lined" class="lines"></div>
+
+    <ul id="players" class="list">
+    </ul>
+
+    <div id="chat">
+        <p><em>Connecting...</em></p>
+    </div>
+
+    <div id="submit_container" style="display: none;">
+        <input type="text" id="text" />
+        <button type="button" id="send" autofocus>Submit hint</button>
+    </div>
+
+    <div id="guess_container" style="display: none;">
+        <input type="text" id="guess_text" />
+        <button type="button" id="guess_send" autofocus>Submit guess</button>
+        <button type="button" id="pass_send">Pass</button>
+    </div>
+
+    <div id="accept_container" style="display: none;">
+        <button type="button" id="accept_send">Accept guess</button>
+        <button type="button" id="reject_send">Reject guess</button>
+    </div>
+
+    <div id="filter_container" style="display: none;">
+        <button type="button" id="filter_send">Submit</button>
+    </div>
+
+    <div id="start_container" style="display: none;">
+        <button type="button" id="start_send">Start the game!</button>
+    </div>
+
+    <div id="name_container">
+        <div><span style="min-width: 100px; display: inline-block;">Game id:</span><input type="text"
+                placeholder="New game" id="game_id_text" /></div>
+        <div><span style="min-width: 100px; display: inline-block;">Name:</span><input type="text" id="name_text" />
+        </div>
+        <div><span style="min-width: 100px; display: inline-block;">Password:</span><input type="text"
+                id="password_text" /></div>
+        <button type="button" id="name_send">New Game</button>
+
+        <script type="text/javascript">
+            let params = new URLSearchParams(window.location.search);
+            let game_id = params.get('game_id');
+            if (game_id != null) {
+                game_id_text.value = game_id;
+                name_send.innerText = 'Join';
+            }
+
+            game_id_text.onkeyup = function () {
+                if (game_id_text.value.length > 0) {
+                    name_send.innerText = 'Join';
+                } else {
+                    name_send.innerText = 'New game';
+                }
+            };
+        </script>
+    </div>
+
+    <div id="score_container" style="text-align: center; display: none; margin-top: 10px;">
+        <div style="border: 1px solid gray; width: 100px; height: 50px; border-radius: 3px; display: inline-block;">
+            <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px">Score</div>
+            <div id='score_span' style="text-align: center;">0</div>
+        </div>
+        <div style="border: 1px solid gray; width: 100px; height: 50px; border-radius: 3px; display: inline-block;">
+            <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px;">Words left</div>
+            <div id='words_left_span' style="text-align: center;">13</div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // pass along the query string
+        var uri = 'ws://' + location.host + '/chat';
+        var ws = new WebSocket(uri);
+
+        var player_list = [];
+        var current_player = 0;
+        var guess_player = 0;
+        var decision_player = 1;
+
+        var waiting_animation = '<span class="saving"><span>.</span><span>.</span><span>.</span></span>';
+
+        function message(data) {
+            console.log("Incoming raw message", data);
+            var msg = JSON.parse(data);
+            switch (msg.type) {
+                case "WordSubmitted":
+                    // remove the waiting animation
+                    var line = players.childNodes[msg.user];
+                    var word = document.createElement('div');
+                    word.style.display = 'inline';
+                    word.innerHTML = '<b>' + text.value + '</b>';
+                    line.replaceChild(word, line.childNodes[1]);
+                    break;
+                case "Finished":
+                    $(guess_container).hide();
+                    $(score_container).hide();
+                    chat.innerHTML = "";
+                    var line = document.createElement('p');
+                    line.innerText = "The game is over! You scored " + msg.points + " points";
+                    chat.appendChild(line);
+                    break;
+                case "UserAdded":
+                    current_player = msg.id; // FIXME, this is bad, we always get the current player id
+                    $(name_container).hide();
+                    var line = document.createElement('li');
+                    line.innerHTML = '<b>' + msg.username + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>no word yet</emph></div>';
+                    player_list.push([-100, msg.username.toString(), "", false]);
+                    players.appendChild(line);
+
+                    $(lined).css('height', '+=46px');
+
+                    chat.innerHTML = "";
+                    var line = document.createElement('p');
+                    var link = window.location.origin + '?game_id=' + msg.game_id;
+                    line.innerHTML = "Invite friends using game id <b>" + msg.game_id + '</b> or sharing  <a href=' + link + '>this link</a>!';
+                    chat.appendChild(line);
+
+                    if (player_list.length > 1 && current_player == 0) {
+                        $(start_container).show();
+                    }
+
+                    break;
+                case "RoundStart":
+                    guess_player = msg.current_user;
+                    decision_player = msg.decision_user;
+                    $(accept_container).hide();
+                    $(start_container).hide();
+
+                    score_span.innerText = msg.score.toString();
+                    words_left_span.innerText = msg.words_left.toString();
+                    $(score_container).show();
+
+                    players.innerHTML = "";
+                    for (var i = 0; i < player_list.length; i++) {
+                        var line = document.createElement('li');
+                        line.id = "li" + i.toString();
+
+                        if (i == guess_player) {
+                            line.innerHTML = '<b>' + player_list[i][1] + '*</b>';
+                        } else {
+                            line.innerHTML = '<b>' + player_list[i][1] + ' - </b>' + waiting_animation;
+                        }
+
+                        players.appendChild(line);
+                    }
+
+                    if (guess_player == current_player) {
+                        chat.innerHTML = "";
+                        var line = document.createElement('p');
+                        line.innerText = "You are the player who has to guess the word!";
+                        chat.appendChild(line);
+                    }
+                    break;
+                case "WordSubmissionRequest":
+                    $(guess_container).hide();
+
+                    chat.innerHTML = "";
+                    var line = document.createElement('p');
+                    line.innerHTML = "Come up with a hint for <b>" + msg.word + "</b>";
+                    chat.appendChild(line);
+                    $(submit_container).show();
+                    break;
+                case "WordGuessRequest":
+                    $(guess_container).show();
+                    break;
+                case "AcceptGuessRequest":
+                    $(accept_container).show();
+                    break;
+                case "ShowRoundOverview":
+                    chat.innerHTML = "";
+                    $(guess_container).hide();
+                    players.innerHTML = "";
+                    for (var i = 0; i < msg.overview.length; i++) {
+                        if (msg.overview[i] == null) {
+                            if (i == guess_player) {
+                                player_list[i][2] = 'PASSED';
+                            } else {
+                                player_list[i][2] = '';
+                            }
+                            player_list[i][3] = false;
+                        } else {
+                            player_list[i][2] = msg.overview[i][0].toString();
+                            player_list[i][3] = msg.overview[i][1];
+                        }
+
+                        var line = document.createElement('li');
+                        line.id = "li" + i.toString();
+
+                        line.innerHTML = '<b>' + player_list[i][1] + ' - </b>';
+
+                        var word = document.createElement('div');
+                        word.id = 'a' + i.toString();
+                        word.style.display = 'inline';
+                        if (player_list[i][3]) {
+                            word.style.textDecoration = "line-through";
+                        }
+                        word.innerText = player_list[i][2];
+
+                        if (i == guess_player) {
+                            word.innerText += '(' + msg.word_to_guess.toString() + ')';
+                        }
+
+                        line.appendChild(word);
+
+                        let index = i;
+                        let w = word;
+                        line.onclick = function () {
+                            if (w.style.textDecoration == "line-through") {
+                                w.style.textDecoration = "";
+                                player_list[index][3] = false;
+                            } else {
+                                w.style.textDecoration = "line-through";
+                                player_list[index][3] = true;
+                            }
+                            console.log(player_list);
+                        };
+
+                        players.appendChild(line);
+                    }
+                    break;
+                case "ShowWords":
+                    chat.innerHTML = "";
+                    $(submit_container).hide();
+
+                    players.innerHTML = "";
+                    for (var i = 0; i < msg.words.length; i++) {
+                        if (msg.words[i] == null) {
+                            player_list[i][2] = '';
+                            player_list[i][3] = false;
+                        } else {
+                            player_list[i][2] = msg.words[i][0].toString();
+                            player_list[i][3] = msg.words[i][1];
+                        }
+
+                        var line = document.createElement('li');
+                        line.id = "li" + i.toString();
+
+                        if (i == guess_player) {
+                            line.innerHTML = '<b>' + player_list[i][1] + '*</b>';
+                        } else {
+                            line.innerHTML = '<b>' + player_list[i][1] + ' - </b>';
+                        }
+
+                        var word = document.createElement('div');
+                        word.id = 'a' + i.toString();
+                        word.style.display = 'inline';
+                        if (player_list[i][3]) {
+                            word.style.textDecoration = "line-through";
+                        }
+                        word.innerText = player_list[i][2];
+                        line.appendChild(word);
+
+                        let index = i;
+                        let w = word;
+                        line.onclick = function () {
+                            if (w.style.textDecoration == "line-through") {
+                                w.style.textDecoration = "";
+                                player_list[index][3] = false;
+                            } else {
+                                w.style.textDecoration = "line-through";
+                                player_list[index][3] = true;
+                            }
+                            console.log(player_list);
+                        };
+
+                        players.appendChild(line);
+                    }
+                    break;
+                case "ShowFilteredWords":
+                    chat.innerHTML = "";
+                    $(filter_container).hide();
+                    players.innerHTML = "";
+                    for (var i = 0; i < msg.words.length; i++) {
+                        if (msg.words[i] == null) {
+                            if (i != current_player && i == guess_player) {
+                                player_list[i][2] = waiting_animation;
+                            } else {
+                                player_list[i][2] = '';
+                            }
+                        } else {
+                            player_list[i][2] = msg.words[i].toString();
+                        }
+                        player_list[i][3] = false;
+
+                        var line = document.createElement('li');
+                        line.id = "li" + i.toString();
+
+                        line.innerHTML = '<b>' + player_list[i][1] + ' - </b>';
+
+                        var word = document.createElement('div');
+                        word.id = 'a' + i.toString();
+                        word.style.display = 'inline';
+                        word.innerHTML = player_list[i][2];
+                        line.appendChild(word);
+                        players.appendChild(line);
+                    }
+                    break;
+                case "ManualDuplicateEliminationRequest":
+                    chat.innerHTML = "";
+                    var line = document.createElement('p');
+                    line.innerText = "Strike out all duplicate words by clicking on them and then submit.";
+                    chat.appendChild(line);
+                    $(filter_container).show();
+                    break;
+                default:
+                    var line = document.createElement('p');
+                    line.innerText = "Unknown message: " + data;
+                    chat.appendChild(line);
+                    console.log("Unknown message", msg);
+                    break;
+            }
+        }
+        ws.onopen = function () {
+            chat.innerHTML = "";
+        }
+        ws.onmessage = function (msg) {
+            console.log(msg);
+            message(msg.data);
+        };
+        send.onclick = function () {
+            var msg = {
+                type: "WordSubmission",
+                word: text.value,
+            };
+
+            var line = players.childNodes[current_player];
+            var word = document.createElement('div');
+            word.style.display = 'inline';
+            word.innerHTML = '<b>' + text.value + '</b>';
+            line.replaceChild(word, line.childNodes[1]);
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+            text.value = '';
+        };
+
+        guess_send.onclick = function () {
+            var msg = {
+                type: "WordGuess",
+                word: guess_text.value,
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+            guess_text.value = '';
+        };
+
+        pass_send.onclick = function () {
+            var msg = {
+                type: "WordGuess",
+                word: "",
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+            guess_text.value = '';
+        };
+
+        accept_send.onclick = function () {
+            var msg = {
+                type: "AcceptGuess",
+                accept: true,
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+
+        reject_send.onclick = function () {
+            var msg = {
+                type: "AcceptGuess",
+                accept: false,
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+
+        filter_send.onclick = function () {
+            var filter_ids = []
+            for (var i = 0; i < player_list.length; i++) {
+                if (player_list[i][3]) {
+                    filter_ids.push(i);
+                }
+            }
+
+            var msg = {
+                type: "ManualDuplicateElimination",
+                ids: filter_ids,
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+
+        start_send.onclick = function () {
+            var msg = {
+                type: "StartGame",
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+
+        name_send.onclick = function () {
+            var msg = {
+                type: "Register",
+                name: name_text.value,
+                password: password_text.value,
+                game_id: game_id_text.value,
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+    </script>
+</body>
+
+</html>

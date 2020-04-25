@@ -1,0 +1,19 @@
+[package]
+name = "justone"
+version = "0.1.0"
+authors = ["Ben Ruijl <benruyl@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+warp = "*"
+tokio = { version = "*", features = ["full", "io-util", "io-std", "sync"] }
+futures = "*"
+pretty_env_logger = "*"
+log = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
+rand = "*"
+clap = "*"
