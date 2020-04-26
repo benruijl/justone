@@ -173,6 +173,9 @@ async fn forward_server_message(
         tx.send(Ok(Message::text(m.to_string())))
             .unwrap_or_else(|e| info!("Error sending {:?} to client: {}", req, e));
     }
+
+    info!("Server message loop closing!");
+    // TODO: clean up the game here?
 }
 
 async fn new_ws_connection(
@@ -260,7 +263,7 @@ async fn new_ws_connection(
                                         game_id.clone(),
                                         Game {
                                             id: game_id.clone(),
-                                            client_sender: s,
+                                            client_sender: s.clone(),
                                             users: vec![user],
                                             started: false,
                                         },
@@ -272,11 +275,10 @@ async fn new_ws_connection(
                                 game_id = thread_rng().sample_iter(&Alphanumeric).take(5).collect();
                             }
 
-                            client_sender
-                                .as_ref()
-                                .unwrap()
-                                .send(logic::ClientMessage::NewPlayer(logic_user))
-                                .unwrap();
+                            s.send(logic::ClientMessage::NewPlayer(logic_user))
+                                .unwrap_or_else(|e| {
+                                    info!("Error sending NewPlayer to server: {}", e)
+                                });
                         } else if let Some(game) = games.get_mut(&game_id) {
                             // attempt to join an existing game
                             // check if this user is already in the game
@@ -323,63 +325,61 @@ async fn new_ws_connection(
                                     .as_ref()
                                     .unwrap()
                                     .send(logic::ClientMessage::NewPlayer(logic_user))
-                                    .unwrap();
+                                    .unwrap_or_else(|e| {
+                                        info!("Error sending NewPlayer to server: {}", e)
+                                    });
                             }
                         } else {
                             unreachable!()
                         }
                     }
                     "WordSubmission" if client_id.is_some() => {
-                        client_sender
-                            .as_ref()
-                            .unwrap()
-                            .send(logic::ClientMessage::WordSubmissionResponse(
-                                client_id.unwrap(),
-                                value["word"].as_str().unwrap().to_string(),
-                            ))
-                            .unwrap();
+                        let m = logic::ClientMessage::WordSubmissionResponse(
+                            client_id.unwrap(),
+                            value["word"].as_str().unwrap().to_string(),
+                        );
+
+                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
+                            info!("Error sending {:?} to server: {}", value, e)
+                        });
                     }
                     "ManualDuplicateElimination" if client_id.is_some() => {
-                        client_sender
-                            .as_ref()
-                            .unwrap()
-                            .send(logic::ClientMessage::ManualDuplicateEliminationResponse(
-                                client_id.unwrap(),
-                                value["ids"]
-                                    .as_array()
-                                    .unwrap()
-                                    .iter()
-                                    .map(|x| x.as_u64().unwrap() as usize)
-                                    .collect(),
-                            ))
-                            .unwrap();
+                        let m = logic::ClientMessage::ManualDuplicateEliminationResponse(
+                            client_id.unwrap(),
+                            value["ids"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|x| x.as_u64().unwrap() as usize)
+                                .collect(),
+                        );
+                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
+                            info!("Error sending {:?} to server: {}", value, e)
+                        });
                     }
                     "WordGuess" if client_id.is_some() => {
-                        client_sender
-                            .as_ref()
-                            .unwrap()
-                            .send(logic::ClientMessage::WordGuessResponse(
-                                client_id.unwrap(),
-                                value["word"].as_str().unwrap().to_string(),
-                            ))
-                            .unwrap();
+                        let m = logic::ClientMessage::WordGuessResponse(
+                            client_id.unwrap(),
+                            value["word"].as_str().unwrap().to_string(),
+                        );
+                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
+                            info!("Error sending {:?} to server: {}", value, e)
+                        });
                     }
                     "AcceptGuess" if client_id.is_some() => {
-                        client_sender
-                            .as_ref()
-                            .unwrap()
-                            .send(logic::ClientMessage::AcceptGuessResponse(
-                                client_id.unwrap(),
-                                value["accept"].as_bool().unwrap(),
-                            ))
-                            .unwrap();
+                        let m = logic::ClientMessage::AcceptGuessResponse(
+                            client_id.unwrap(),
+                            value["accept"].as_bool().unwrap(),
+                        );
+                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
+                            info!("Error sending {:?} to server: {}", value, e)
+                        });
                     }
                     "StartGame" if client_id == Some(0) => {
-                        client_sender
-                            .as_ref()
-                            .unwrap()
-                            .send(logic::ClientMessage::StartGame)
-                            .unwrap();
+                        let m = logic::ClientMessage::StartGame;
+                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
+                            info!("Error sending {:?} to server: {}", value, e)
+                        });
                     }
                     _ => {
                         error!("Unknown client message from {:?}: {}", remote_addr, value);
@@ -387,7 +387,7 @@ async fn new_ws_connection(
                 }
             }
             Err(e) => {
-                eprintln!("websocket error(uid={:?}): {}", client_id, e);
+                error!("websocket error(uid={:?}): {}", client_id, e);
                 break;
             }
         };

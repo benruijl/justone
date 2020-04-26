@@ -221,7 +221,7 @@
                     var line = players.childNodes[msg.user];
                     var word = document.createElement('div');
                     word.style.display = 'inline';
-                    word.innerHTML = '<b>' + text.value + '</b>';
+                    word.innerHTML = '';
                     line.replaceChild(word, line.childNodes[1]);
                     break;
                 case "Finished":

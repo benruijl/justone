@@ -120,7 +120,6 @@ bridge
 brocoli
 brother
 brown
-buckel
 budget
 bus
 bush
@@ -191,8 +190,6 @@ clock
 clothes
 cloud
 club
-co
-co-operation
 coal
 coast
 coasters
@@ -953,7 +950,7 @@ sofa
 software
 soil
 solution
-sommer
+summer
 son
 song
 sonic

@@ -139,6 +139,7 @@ impl Logic {
                             .send(ServerMessage::Finished(i, self.score))
                             .unwrap();
                     }
+                    break;
                 }
                 State::WaitingForPlayers => {
                     while let Some(res) = self.update_out_channel.recv().await {
@@ -240,12 +241,15 @@ impl Logic {
                             ))
                             .unwrap();
                     }
-                    delay_for(Duration::from_secs(5)).await;
 
                     if self.users[self.current_user].word_guess.is_none() {
+                        delay_for(Duration::from_secs(10)).await;
+
                         // the player passed: forward to next round
                         self.words_left -= 1;
                     } else {
+                        delay_for(Duration::from_secs(2)).await;
+
                         self.users[self.decision_user]
                             .channel_out
                             .send(ServerMessage::AcceptGuessRequest(self.decision_user))
@@ -386,7 +390,7 @@ impl Logic {
                     }
 
                     // send the words to everyone but the current user
-                    let mut words: Vec<Option<(String, bool)>> = self
+                    let words: Vec<Option<(String, bool)>> = self
                         .users
                         .iter()
                         .map(|u| u.word_guess.as_ref().map(|x| (x.clone(), u.word_stricken)))
