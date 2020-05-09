@@ -1,5 +1,8 @@
 #[macro_use]
-extern crate log;
+extern crate slog;
+
+#[macro_use]
+extern crate slog_scope;
 
 #[macro_use]
 extern crate serde_derive;
@@ -10,11 +13,10 @@ use rand::{thread_rng, Rng};
 use clap::{App, Arg};
 use futures::{FutureExt, StreamExt};
 use serde_json::json;
+use slog::{Drain, Duplicate, Level, LevelFilter};
 use std::collections::HashMap;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::io::Read;
+use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
@@ -26,6 +28,7 @@ struct User {
     name: String,
     password: String,
     connected: bool,
+    tx: mpsc::UnboundedSender<Result<Message, warp::Error>>,
 }
 
 struct Game {
@@ -33,6 +36,29 @@ struct Game {
     started: bool, // still accepting new players?
     client_sender: mpsc::UnboundedSender<logic::ClientMessage>,
     users: Vec<User>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum ClientMessage {
+    Register {
+        game_id: String,
+        name: String,
+        password: String,
+    },
+    WordSubmission {
+        word: String,
+    },
+    ManualDuplicateElimination {
+        ids: Vec<usize>,
+    },
+    WordGuess {
+        word: String,
+    },
+    AcceptGuess {
+        accept: bool,
+    },
+    StartGame,
 }
 
 struct ServerState {
@@ -46,8 +72,37 @@ struct QueryOptions {
 
 #[tokio::main]
 async fn main() {
-    pretty_env_logger::init();
+    // set up logging to the screen and to the file
+    let decorator = slog_term::TermDecorator::new().build();
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
 
+    let log_path = "justone.log";
+    let file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .write(true)
+        .open(log_path)
+        .unwrap();
+
+    let decorator1 = slog_term::PlainDecorator::new(file);
+    let drain1 = slog_term::FullFormat::new(decorator1).build().fuse();
+    let drain1 = slog_async::Async::new(drain1).build().fuse();
+
+    let log = slog::Logger::root(
+        Duplicate::new(
+            LevelFilter::new(drain, Level::Info),
+            LevelFilter::new(drain1, Level::Debug),
+        )
+        .fuse(),
+        o!(),
+    );
+
+    let _guard = slog_scope::set_global_logger(log);
+    slog_scope::scope(&slog_scope::logger().new(slog_o!()), || start()).await;
+}
+
+async fn start() {
     let matches = App::new("Just One")
         .version("0.1")
         .author("Ben Ruijl <benruyl@gmail.com>")
@@ -58,12 +113,33 @@ async fn main() {
                 .long("use_cli")
                 .help("Use CLI instead of web server"),
         )
+        .arg(
+            Arg::with_name("tls")
+                .long("tls")
+                .min_values(2)
+                .max_values(2)
+                .help("Use TLS: provide cert and key file as argument"),
+        )
+        .arg(
+            Arg::with_name("port")
+                .long("port")
+                .short("p")
+                .takes_value(true)
+                .default_value("3030")
+                .help("Specify the port"),
+        )
         .get_matches();
 
     if matches.is_present("cli") {
         logic::Logic::new_game_cli(2).await;
         return;
     }
+
+    let port: u16 = matches
+        .value_of("port")
+        .unwrap()
+        .parse::<u16>()
+        .expect("Port must be an integer.");
 
     let server_state = Arc::new(Mutex::new(ServerState {
         games: HashMap::new(),
@@ -82,105 +158,174 @@ async fn main() {
              query_options,
              server_state_filter| {
                 ws.on_upgrade(move |socket| {
-                    new_ws_connection(
-                        socket,
-                        remote_addr.unwrap(),
-                        query_options,
-                        server_state_filter,
-                    )
+                    new_ws_connection(socket, remote_addr, query_options, server_state_filter)
                 })
             },
         );
 
-    // GET / -> index html
-    let index_site = //warp::path::end().map(|| warp::reply::html(contents.clone()));
-    warp::get()
-    .and(warp::path::end())
-    .and(warp::fs::file("./include/index.html"));
+    let mut index_page = String::new();
+    std::io::BufReader::new(std::fs::File::open("./include/index.html").unwrap())
+        .read_to_string(&mut index_page)
+        .unwrap();
 
-    let routes = index_site.or(chat);
+    let index_site = warp::get()
+        .and(warp::path::end())
+        .map(move || warp::reply::html(index_page.clone()));
 
-    //.tls()
-    //.cert_path("examples/tls/cert.pem")
-    //.key_path("examples/tls/key.rsa")
-    warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
+    let favicon = warp::path("favicon.ico")
+        .and(warp::path::end())
+        .and(warp::fs::file("./include/favicon.ico"));
+
+    let routes = favicon.or(index_site).or(chat);
+
+    if matches.is_present("tls") {
+        let filenames: Vec<&str> = matches.values_of("tls").unwrap().collect();
+        warp::serve(routes)
+            .tls()
+            .cert_path(filenames[0])
+            .key_path(filenames[1])
+            .run(([0, 0, 0, 0], port))
+            .await;
+    } else {
+        warp::serve(routes).run(([0, 0, 0, 0], port)).await;
+    }
 }
 
 async fn forward_server_message(
     game_id: String,
-    mut rreq: mpsc::UnboundedReceiver<logic::ServerMessage>,
-    tx: mpsc::UnboundedSender<Result<Message, warp::Error>>,
+    mut server_message_rx: mpsc::UnboundedReceiver<logic::ServerMessage>,
+    server_state: Arc<Mutex<ServerState>>,
 ) {
-    while let Some(req) = rreq.next().await {
-        let m = match &req {
-            logic::ServerMessage::UserAdded(i, username) => json!({
-                "type": "UserAdded",
-                "username": username,
-                "id": i,
-                "game_id": &game_id
-            }),
-            logic::ServerMessage::Finished(_i, points) => json!({
-                "type": "Finished",
-                "points": points,
-            }),
-            logic::ServerMessage::RoundStart(
-                _i,
-                current_user,
-                decision_user,
-                score,
-                words_left,
-            ) => json!({
-                "type": "RoundStart",
-                "current_user": current_user,
-                "decision_user": decision_user,
-                "score": score,
-                "words_left": words_left,
-            }),
-            logic::ServerMessage::WordSubmitted(_i, u) => json!({
-                "type": "WordSubmitted",
-                "user": u,
-            }),
-            logic::ServerMessage::WordSubmissionRequest(_i, w) => json!({
-                "type": "WordSubmissionRequest",
-                "word": w,
-            }),
-            logic::ServerMessage::WordGuessRequest(_i) => json!({
-                "type": "WordGuessRequest",
-            }),
-            logic::ServerMessage::AcceptGuessRequest(_i) => json!({
-                "type": "AcceptGuessRequest",
-            }),
-            logic::ServerMessage::ShowFilteredWords(_i, w) => json!({
-                "type": "ShowFilteredWords",
-                "words": w,
-            }),
-            logic::ServerMessage::ShowWords(_i, w) => json!({
-                "type": "ShowWords",
-                "words": w,
-            }),
-            logic::ServerMessage::ShowRoundOverview(_i, word_to_guess, overview) => json!({
-                "type": "ShowRoundOverview",
-                "word_to_guess": word_to_guess,
-                "overview": overview,
-            }),
-            logic::ServerMessage::ManualDuplicateEliminationRequest(_i) => json!({
-                "type": "ManualDuplicateEliminationRequest",
-            }),
+    let mut game_started = false;
+
+    while let Some(req) = server_message_rx.next().await {
+        let (i, m) = match &req {
+            logic::ServerMessage::Reconnecting(i) => (
+                i,
+                json!({
+                    "type": "Reconnecting",
+                    "id": i,
+                }),
+            ),
+            logic::ServerMessage::UserAdded(i, username) => (
+                i,
+                json!({
+                    "type": "UserAdded",
+                    "username": username,
+                    "id": i,
+                    "game_id": &game_id
+                }),
+            ),
+            logic::ServerMessage::Finished(i, points) => (
+                i,
+                json!({
+                    "type": "Finished",
+                    "points": points,
+                }),
+            ),
+            logic::ServerMessage::RoundStart(i, current_user, decision_user, score, words_left) => {
+                if !game_started {
+                    server_state
+                        .lock()
+                        .await
+                        .games
+                        .get_mut(&game_id)
+                        .unwrap()
+                        .started = true;
+                    game_started = true;
+                }
+
+                (
+                    i,
+                    json!({
+                        "type": "RoundStart",
+                        "current_user": current_user,
+                        "decision_user": decision_user,
+                        "score": score,
+                        "words_left": words_left,
+                    }),
+                )
+            }
+            logic::ServerMessage::WordSubmitted(i, u) => (
+                i,
+                json!({
+                    "type": "WordSubmitted",
+                    "user": u,
+                }),
+            ),
+            logic::ServerMessage::WordSubmissionRequest(i, w) => (
+                i,
+                json!({
+                    "type": "WordSubmissionRequest",
+                    "word": w,
+                }),
+            ),
+            logic::ServerMessage::WordGuessRequest(i) => (
+                i,
+                json!({
+                    "type": "WordGuessRequest",
+                }),
+            ),
+            logic::ServerMessage::AcceptGuessRequest(i) => (
+                i,
+                json!({
+                    "type": "AcceptGuessRequest",
+                }),
+            ),
+            logic::ServerMessage::ShowFilteredWords(i, w) => (
+                i,
+                json!({
+                    "type": "ShowFilteredWords",
+                    "words": w,
+                }),
+            ),
+            logic::ServerMessage::ShowWords(i, w) => (
+                i,
+                json!({
+                    "type": "ShowWords",
+                    "words": w,
+                }),
+            ),
+            logic::ServerMessage::ShowRoundOverview(i, word_to_guess, overview) => (
+                i,
+                json!({
+                    "type": "ShowRoundOverview",
+                    "word_to_guess": word_to_guess,
+                    "overview": overview,
+                }),
+            ),
+            logic::ServerMessage::ManualDuplicateEliminationRequest(i) => (
+                i,
+                json!({
+                    "type": "ManualDuplicateEliminationRequest",
+                }),
+            ),
         };
 
         info!("{}", m.to_string());
 
-        tx.send(Ok(Message::text(m.to_string())))
-            .unwrap_or_else(|e| info!("Error sending {:?} to client: {}", req, e));
+        // TODO: find a solution that doesn't require a lock
+        match server_state.lock().await.games[&game_id].users.get(*i) {
+            Some(u) => {
+                u.tx.send(Ok(Message::text(m.to_string())))
+                    .unwrap_or_else(|e| info!("Error sending {:?} to client: {}", req, e));
+            }
+            None => {
+                error!("Unknown user id {}", i);
+            }
+        }
     }
 
-    info!("Server message loop closing!");
-    // TODO: clean up the game here?
+    info!("Server message loop closing: removing game {}", game_id);
+
+    if server_state.lock().await.games.remove(&game_id).is_none() {
+        error!("Tried to remove game {} that does not exist", game_id);
+    };
 }
 
 async fn new_ws_connection(
     ws: WebSocket,
-    remote_addr: std::net::SocketAddr,
+    remote_addr: Option<std::net::SocketAddr>,
     _query_options: QueryOptions,
     server_state: Arc<Mutex<ServerState>>,
 ) {
@@ -210,41 +355,40 @@ async fn new_ws_connection(
                     continue;
                 }
 
-                info!("{:?}", msg);
-                info!("Received {}", msg.to_str().unwrap());
-                // TODO: guard
-                let value: serde_json::Value = serde_json::from_str(msg.to_str().unwrap()).unwrap();
-                match value["type"].as_str().unwrap() {
-                    "Register" => {
-                        let mut game_id = value["game_id"].as_str().unwrap().to_string();
-                        let username = value["name"].as_str().unwrap().to_string();
-                        let password = value["password"].as_str().unwrap().to_string();
+                let msg = msg.to_str().expect("Message type should be text");
+                info!("Received {:?}", msg);
 
+                let client_message: ClientMessage = match serde_json::from_str(msg) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("Client sent unknown message: {}; Error: {}", msg, e);
+                        continue;
+                    }
+                };
+
+                match client_message {
+                    ClientMessage::Register {
+                        mut game_id,
+                        name,
+                        password,
+                    } => {
                         let games = &mut server_state.lock().await.games;
 
                         if game_id.is_empty() || !games.contains_key(&game_id) {
                             // create a new game
-                            let (s, r) = mpsc::unbounded_channel();
-                            tokio::spawn(logic::Logic::new_game(r));
+                            let (c_tx, c_rx) = mpsc::unbounded_channel();
+                            let (s_tx, s_rx) = mpsc::unbounded_channel();
+                            tokio::spawn(logic::Logic::new_game(c_rx, s_tx));
 
-                            client_sender = Some(s.clone());
+                            client_sender = Some(c_tx.clone());
                             client_id = Some(0); // using the index as the id is not very flexible
-
-                            // create a new user registered to the logic
-                            let (sreq, rreq) = mpsc::unbounded_channel();
-
-                            let logic_user = logic::User {
-                                name: username.clone(),
-                                word_guess: None,
-                                word_stricken: false,
-                                channel_out: sreq.clone(),
-                            };
 
                             let user = User {
                                 id: 0,
-                                name: username,
+                                name: name.clone(),
                                 password,
                                 connected: true,
+                                tx: tx.clone(),
                             };
 
                             if game_id.is_empty() {
@@ -256,14 +400,14 @@ async fn new_ws_connection(
                                     info!("Created new game with id {}", game_id);
                                     tokio::spawn(forward_server_message(
                                         game_id.clone(),
-                                        rreq,
-                                        tx.clone(),
+                                        s_rx,
+                                        server_state.clone(),
                                     ));
                                     games.insert(
                                         game_id.clone(),
                                         Game {
                                             id: game_id.clone(),
-                                            client_sender: s.clone(),
+                                            client_sender: c_tx.clone(),
                                             users: vec![user],
                                             started: false,
                                         },
@@ -275,115 +419,142 @@ async fn new_ws_connection(
                                 game_id = thread_rng().sample_iter(&Alphanumeric).take(5).collect();
                             }
 
-                            s.send(logic::ClientMessage::NewPlayer(logic_user))
+                            c_tx.send(logic::ClientMessage::NewPlayer(name.clone()))
                                 .unwrap_or_else(|e| {
                                     info!("Error sending NewPlayer to server: {}", e)
                                 });
                         } else if let Some(game) = games.get_mut(&game_id) {
+                            client_sender = Some(game.client_sender.clone());
+
                             // attempt to join an existing game
                             // check if this user is already in the game
                             let mut new_player = true;
-                            for (u_i, u) in game.users.iter().enumerate() {
-                                if u.name == username && u.password == password {
-                                    // already exists
-                                    error!("User {} reconnecting: not implemented", u.name);
+                            for (u_i, u) in game.users.iter_mut().enumerate() {
+                                if u.name == name {
                                     new_player = false;
-                                    client_id = Some(u_i);
+                                    if u.password == password {
+                                        warn!(
+                                            "User {} reconnecting: partially implemented",
+                                            u.name
+                                        );
+                                        u.tx = tx.clone();
+                                        client_id = Some(u_i);
+
+                                        // send the reconnecting message to the client here, since the logic
+                                        // may be in a state where it takes a while before the reconnecting occurs
+                                        let m = json!({
+                                            "type": "Reconnecting",
+                                            "id": u_i,
+                                        });
+                                        u.tx.send(Ok(Message::text(m.to_string()))).unwrap_or_else(
+                                            |e| info!("Error sending {:?} to client: {}", m, e),
+                                        );
+
+                                        game.client_sender
+                                            .send(logic::ClientMessage::ResendGameState(u_i))
+                                            .unwrap_or_else(|e| {
+                                                info!("Error sending NewPlayer to server: {}", e)
+                                            });
+                                        break;
+                                    } else {
+                                        // reject the player
+                                        let m = json!({
+                                            "type": "Rejected",
+                                            "reason": "the password does not match the existing player's",
+                                        });
+                                        tx.send(Ok(Message::text(m.to_string()))).unwrap_or_else(
+                                            |e| info!("Error sending {:?} to client: {}", m, e),
+                                        );
+                                    }
                                     break;
                                 }
                             }
 
-                            client_sender = Some(game.client_sender.clone());
-
-                            // TODO: do not allow a new player on a game that has started
                             if new_player {
-                                client_id = Some(game.users.len());
-
-                                let (sreq, rreq) = mpsc::unbounded_channel();
-                                tokio::spawn(forward_server_message(
-                                    game_id.clone(),
-                                    rreq,
-                                    tx.clone(),
-                                ));
-                                let logic_user = logic::User {
-                                    name: username.clone(),
-                                    word_guess: None,
-                                    word_stricken: false,
-                                    channel_out: sreq.clone(),
-                                };
-
-                                let user = User {
-                                    id: client_id.unwrap(),
-                                    name: username,
-                                    password,
-                                    connected: true,
-                                };
-
-                                game.users.push(user);
-
-                                client_sender
-                                    .as_ref()
-                                    .unwrap()
-                                    .send(logic::ClientMessage::NewPlayer(logic_user))
-                                    .unwrap_or_else(|e| {
-                                        info!("Error sending NewPlayer to server: {}", e)
+                                // do not allow a new player on a game that has started
+                                if game.started {
+                                    let m = json!({
+                                        "type": "Rejected",
+                                        "reason": "the game has already started",
                                     });
+                                    tx.send(Ok(Message::text(m.to_string())))
+                                        .unwrap_or_else(|e| {
+                                            info!("Error sending {:?} to client: {}", m, e)
+                                        });
+                                } else {
+                                    client_id = Some(game.users.len());
+
+                                    let user = User {
+                                        id: client_id.unwrap(),
+                                        name: name.clone(),
+                                        password,
+                                        connected: true,
+                                        tx: tx.clone(),
+                                    };
+
+                                    game.users.push(user);
+
+                                    game.client_sender
+                                        .send(logic::ClientMessage::NewPlayer(name.clone()))
+                                        .unwrap_or_else(|e| {
+                                            info!("Error sending NewPlayer to server: {}", e)
+                                        });
+                                }
                             }
                         } else {
                             unreachable!()
                         }
                     }
-                    "WordSubmission" if client_id.is_some() => {
-                        let m = logic::ClientMessage::WordSubmissionResponse(
-                            client_id.unwrap(),
-                            value["word"].as_str().unwrap().to_string(),
-                        );
+                    ClientMessage::WordSubmission { word } if client_id.is_some() => {
+                        let m =
+                            logic::ClientMessage::WordSubmissionResponse(client_id.unwrap(), word);
 
-                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
-                            info!("Error sending {:?} to server: {}", value, e)
-                        });
+                        client_sender
+                            .as_ref()
+                            .unwrap()
+                            .send(m)
+                            .unwrap_or_else(|e| info!("Error sending {:?} to server: {}", msg, e));
                     }
-                    "ManualDuplicateElimination" if client_id.is_some() => {
+                    ClientMessage::ManualDuplicateElimination { ids } if client_id.is_some() => {
                         let m = logic::ClientMessage::ManualDuplicateEliminationResponse(
                             client_id.unwrap(),
-                            value["ids"]
-                                .as_array()
-                                .unwrap()
-                                .iter()
-                                .map(|x| x.as_u64().unwrap() as usize)
-                                .collect(),
+                            ids,
                         );
-                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
-                            info!("Error sending {:?} to server: {}", value, e)
-                        });
+                        client_sender
+                            .as_ref()
+                            .unwrap()
+                            .send(m)
+                            .unwrap_or_else(|e| info!("Error sending {:?} to server: {}", msg, e));
                     }
-                    "WordGuess" if client_id.is_some() => {
-                        let m = logic::ClientMessage::WordGuessResponse(
-                            client_id.unwrap(),
-                            value["word"].as_str().unwrap().to_string(),
-                        );
-                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
-                            info!("Error sending {:?} to server: {}", value, e)
-                        });
+                    ClientMessage::WordGuess { word } if client_id.is_some() => {
+                        let m = logic::ClientMessage::WordGuessResponse(client_id.unwrap(), word);
+                        client_sender
+                            .as_ref()
+                            .unwrap()
+                            .send(m)
+                            .unwrap_or_else(|e| info!("Error sending {:?} to server: {}", msg, e));
                     }
-                    "AcceptGuess" if client_id.is_some() => {
-                        let m = logic::ClientMessage::AcceptGuessResponse(
-                            client_id.unwrap(),
-                            value["accept"].as_bool().unwrap(),
-                        );
-                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
-                            info!("Error sending {:?} to server: {}", value, e)
-                        });
+                    ClientMessage::AcceptGuess { accept } if client_id.is_some() => {
+                        let m =
+                            logic::ClientMessage::AcceptGuessResponse(client_id.unwrap(), accept);
+                        client_sender
+                            .as_ref()
+                            .unwrap()
+                            .send(m)
+                            .unwrap_or_else(|e| info!("Error sending {:?} to server: {}", msg, e));
                     }
-                    "StartGame" if client_id == Some(0) => {
+                    ClientMessage::StartGame if client_id == Some(0) => {
                         let m = logic::ClientMessage::StartGame;
-                        client_sender.as_ref().unwrap().send(m).unwrap_or_else(|e| {
-                            info!("Error sending {:?} to server: {}", value, e)
-                        });
+                        client_sender
+                            .as_ref()
+                            .unwrap()
+                            .send(m)
+                            .unwrap_or_else(|e| info!("Error sending {:?} to server: {}", msg, e));
                     }
-                    _ => {
-                        error!("Unknown client message from {:?}: {}", remote_addr, value);
-                    }
+                    _ => error!(
+                        "Message received but there is no client id: {:?}",
+                        client_message
+                    ),
                 }
             }
             Err(e) => {

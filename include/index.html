@@ -3,6 +3,7 @@
 
 <head>
     <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet'>
     <title>Just One</title>
 
     <style>
@@ -11,13 +12,12 @@
             width: 600px;
             margin: 0 auto;
             padding: 0;
+            font-family: 'Abel';
+            font-size: 22px;
         }
 
         h4 {
-            color: #cdcdcd;
             font-size: 42px;
-            letter-spacing: -2px;
-            font-family: Verdana, Geneva, Tahoma, sans-serif;
             text-align: center;
         }
 
@@ -25,7 +25,6 @@
             color: #555;
             font-size: 22px;
             padding: 0 !important;
-            width: 500px;
             font-family: courier, monospace;
             border: 1px solid #dedede;
         }
@@ -54,6 +53,12 @@
             float: left;
             height: 0px;
             margin-left: 40px;
+        }
+
+        .has_action {
+            border: 2px solid #da6826;
+            border-radius: 5px;
+            padding: 0px 10px 10px 10px;
         }
 
         @keyframes blink {
@@ -123,6 +128,55 @@
      */
             animation-delay: .4s;
         }
+
+        blockquote {
+            background: #f9f9f9;
+            border-left: 10px solid #ccc;
+            margin: 1.5em 10px;
+            padding: 0.5em 10px;
+            quotes: "\201C""\201D""\2018""\2019";
+        }
+
+        blockquote:before {
+            color: #ccc;
+            content: open-quote;
+            font-size: 4em;
+            line-height: 0.1em;
+            margin-right: 0.25em;
+            vertical-align: -0.4em;
+        }
+
+        blockquote p {
+            display: inline;
+        }
+
+        #pass_send {
+            padding: 5px 35px 10px 5px;
+            background: #f0f0f0 url(http://icons.iconarchive.com/icons/google/noto-emoji-animals-nature/64/22266-chicken-icon.png);
+            background-position: 40px 0px;
+            background-size: 30px 30px;
+            background-repeat: no-repeat;
+        }
+
+        .modalDialog {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 1;
+        }
+
+        .modalDialog>div {
+            width: 400px;
+            position: relative;
+            margin: 10% auto;
+            padding: 5px 20px 13px 20px;
+            text-align: center;
+            border-radius: 10px;
+            color: white;
+            background: #993933;
+        }
     </style>
 </head>
 
@@ -134,81 +188,116 @@
     <ul id="players" class="list">
     </ul>
 
-    <div id="chat">
-        <p><em>Connecting...</em></p>
-    </div>
-
-    <div id="submit_container" style="display: none;">
-        <input type="text" id="text" />
-        <button type="button" id="send" autofocus>Submit hint</button>
-    </div>
-
-    <div id="guess_container" style="display: none;">
-        <input type="text" id="guess_text" />
-        <button type="button" id="guess_send" autofocus>Submit guess</button>
-        <button type="button" id="pass_send">Pass</button>
-    </div>
-
-    <div id="accept_container" style="display: none;">
-        <button type="button" id="accept_send">Accept guess</button>
-        <button type="button" id="reject_send">Reject guess</button>
-    </div>
-
-    <div id="filter_container" style="display: none;">
-        <button type="button" id="filter_send">Submit</button>
-    </div>
-
-    <div id="start_container" style="display: none;">
-        <button type="button" id="start_send">Start the game!</button>
-    </div>
-
-    <div id="name_container">
-        <div><span style="min-width: 100px; display: inline-block;">Game id:</span><input type="text"
-                placeholder="New game" id="game_id_text" /></div>
-        <div><span style="min-width: 100px; display: inline-block;">Name:</span><input type="text" id="name_text" />
+    <div id="action_div" class="">
+        <div id="chat">
+            <p><em>Connecting to game...</em></p>
         </div>
-        <div><span style="min-width: 100px; display: inline-block;">Password:</span><input type="text"
-                id="password_text" /></div>
-        <button type="button" id="name_send">New Game</button>
 
-        <script type="text/javascript">
-            let params = new URLSearchParams(window.location.search);
-            let game_id = params.get('game_id');
-            if (game_id != null) {
-                game_id_text.value = game_id;
-                name_send.innerText = 'Join';
-            }
+        <div id="submit_container" style="display: none;">
+            <input type="text" id="text" />
+            <button type="button" id="send" autofocus>Submit hint</button>
 
-            game_id_text.onkeyup = function () {
-                if (game_id_text.value.length > 0) {
-                    name_send.innerText = 'Join';
-                } else {
-                    name_send.innerText = 'New game';
+            <script type="text/javascript">
+                text.onkeyup = function (e) {
+                    if (e.key == "Enter") {
+                        send.click();
+                    }
+                };
+            </script>
+        </div>
+
+        <div id="guess_container" style="display: none;">
+            <input type="text" id="guess_text" />
+            <button type="button" id="guess_send" disabled>Submit guess</button>
+            <button type="button" id="pass_send">Pass</button>
+
+            <script type="text/javascript">
+                guess_text.onkeyup = function () {
+                    guess_send.disabled = guess_text.value.length == 0;
                 }
-            };
-        </script>
+            </script>
+        </div>
+
+        <div id="accept_container" style="display: none;">
+            <button type="button" id="accept_send">Accept guess</button>
+            <button type="button" id="reject_send">Reject guess</button>
+        </div>
+
+        <div id="filter_container" style="display: none;">
+            <button type="button" id="filter_send">Submit</button>
+        </div>
+
+        <div id="start_container" style="display: none;">
+            <button type="button" id="start_send">Start the game!</button>
+        </div>
+
+        <div id="name_container">
+            <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
+                    placeholder="New game" id="game_id_text" /></div>
+            <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text" id="name_text" />
+            </div>
+            <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
+                    placeholder="for reconnecting" id="password_text" /></div>
+            <button type="button" id="name_send" disabled>New Game</button>
+
+            <script type="text/javascript">
+                let params = new URLSearchParams(window.location.search);
+                let game_id = params.get('game_id');
+                if (game_id != null) {
+                    game_id_text.value = game_id;
+                    name_send.innerText = 'Join';
+                }
+
+                name_text.onkeyup = function () {
+                    name_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                }
+
+                password_text.onkeyup = function () {
+                    name_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                }
+
+                game_id_text.onkeyup = function () {
+                    if (game_id_text.value.length > 0) {
+                        name_send.innerText = 'Join';
+                    } else {
+                        name_send.innerText = 'New game';
+                    }
+                };
+            </script>
+        </div>
     </div>
 
     <div id="score_container" style="text-align: center; display: none; margin-top: 10px;">
-        <div style="border: 1px solid gray; width: 100px; height: 50px; border-radius: 3px; display: inline-block;">
+        <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
             <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px">Score</div>
             <div id='score_span' style="text-align: center;">0</div>
         </div>
-        <div style="border: 1px solid gray; width: 100px; height: 50px; border-radius: 3px; display: inline-block;">
+        <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
             <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px;">Words left</div>
             <div id='words_left_span' style="text-align: center;">13</div>
         </div>
     </div>
 
     <script type="text/javascript">
+        var sanitizeHTML = function (str) {
+            var temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        };
+
         // pass along the query string
-        var uri = 'ws://' + location.host + '/chat';
+        var uri = 'wss://' + location.host + '/chat';
+        if (location.protocol !== 'https:') {
+            uri = 'ws://' + location.host + '/chat';
+        }
+
         var ws = new WebSocket(uri);
 
         var player_list = [];
         var current_player = 0;
         var guess_player = 0;
         var decision_player = 1;
+        var reconnecting = false;
 
         var waiting_animation = '<span class="saving"><span>.</span><span>.</span><span>.</span></span>';
 
@@ -216,40 +305,56 @@
             console.log("Incoming raw message", data);
             var msg = JSON.parse(data);
             switch (msg.type) {
+                case "Rejected":
+                    chat.innerText = "Could not join game: " + msg.reason + ".";
+                    $(action_div).addClass('has_action');
+                    reconnecting = true;
+                    break;
+                case "Reconnecting":
+                    $(name_container).hide();
+                    $(action_div).removeClass('has_action');
+                    chat.innerText = "You will be reconnected to the game once it reaches a checkpoint.";
+                    break;
                 case "WordSubmitted":
                     // remove the waiting animation
                     var line = players.childNodes[msg.user];
                     var word = document.createElement('div');
                     word.style.display = 'inline';
-                    word.innerHTML = '';
+                    word.innerText = '';
                     line.replaceChild(word, line.childNodes[1]);
                     break;
                 case "Finished":
                     $(guess_container).hide();
+                    $(accept_container).hide();
                     $(score_container).hide();
-                    chat.innerHTML = "";
+                    $(action_div).removeClass('has_action');
+                    chat.innerText = "";
                     var line = document.createElement('p');
                     line.innerText = "The game is over! You scored " + msg.points + " points";
                     chat.appendChild(line);
                     break;
                 case "UserAdded":
-                    current_player = msg.id; // FIXME, this is bad, we always get the current player id
+                    current_player = msg.id; // set the id of the current client
                     $(name_container).hide();
                     var line = document.createElement('li');
-                    line.innerHTML = '<b>' + msg.username + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>no word yet</emph></div>';
+                    line.innerHTML = '<b>' + sanitizeHTML(msg.username) + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>no word yet</emph></div>';
                     player_list.push([-100, msg.username.toString(), "", false]);
                     players.appendChild(line);
 
                     $(lined).css('height', '+=46px');
 
-                    chat.innerHTML = "";
-                    var line = document.createElement('p');
-                    var link = window.location.origin + '?game_id=' + msg.game_id;
-                    line.innerHTML = "Invite friends using game id <b>" + msg.game_id + '</b> or sharing  <a href=' + link + '>this link</a>!';
-                    chat.appendChild(line);
+                    chat.innerText = "";
+
+                    if (!reconnecting) {
+                        var line = document.createElement('p');
+                        var link = window.location.origin + '?game_id=' + sanitizeHTML(msg.game_id);
+                        line.innerHTML = "Invite friends using game id <b>" + sanitizeHTML(msg.game_id) + '</b> or sharing  <a href=' + link + '>this link</a>!';
+                        chat.appendChild(line);
+                    }
 
                     if (player_list.length > 1 && current_player == 0) {
                         $(start_container).show();
+                        $(action_div).removeClass('has_action');
                     }
 
                     break;
@@ -258,27 +363,28 @@
                     decision_player = msg.decision_user;
                     $(accept_container).hide();
                     $(start_container).hide();
+                    $(action_div).removeClass('has_action');
 
                     score_span.innerText = msg.score.toString();
                     words_left_span.innerText = msg.words_left.toString();
                     $(score_container).show();
 
-                    players.innerHTML = "";
+                    players.innerText = "";
                     for (var i = 0; i < player_list.length; i++) {
                         var line = document.createElement('li');
                         line.id = "li" + i.toString();
 
                         if (i == guess_player) {
-                            line.innerHTML = '<b>' + player_list[i][1] + '*</b>';
+                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + '*</b>';
                         } else {
-                            line.innerHTML = '<b>' + player_list[i][1] + ' - </b>' + waiting_animation;
+                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>' + waiting_animation;
                         }
 
                         players.appendChild(line);
                     }
 
                     if (guess_player == current_player) {
-                        chat.innerHTML = "";
+                        chat.innerText = "";
                         var line = document.createElement('p');
                         line.innerText = "You are the player who has to guess the word!";
                         chat.appendChild(line);
@@ -287,22 +393,30 @@
                 case "WordSubmissionRequest":
                     $(guess_container).hide();
 
-                    chat.innerHTML = "";
+                    chat.innerText = "";
                     var line = document.createElement('p');
-                    line.innerHTML = "Come up with a hint for <b>" + msg.word + "</b>";
+                    line.innerHTML = "Come up with a hint for <b>" + sanitizeHTML(msg.word) + "</b>";
                     chat.appendChild(line);
                     $(submit_container).show();
+                    $(action_div).addClass('has_action');
+                    $(text).focus();
                     break;
                 case "WordGuessRequest":
+                    chat.innerText = "";
                     $(guess_container).show();
+                    $(action_div).addClass('has_action');
+                    $(guess_text).focus();
                     break;
                 case "AcceptGuessRequest":
+                    chat.innerText = "";
                     $(accept_container).show();
+                    $(action_div).addClass('has_action');
                     break;
                 case "ShowRoundOverview":
-                    chat.innerHTML = "";
+                    chat.innerText = "";
                     $(guess_container).hide();
-                    players.innerHTML = "";
+                    $(action_div).removeClass('has_action');
+                    players.innerText = "";
                     for (var i = 0; i < msg.overview.length; i++) {
                         if (msg.overview[i] == null) {
                             if (i == guess_player) {
@@ -319,7 +433,7 @@
                         var line = document.createElement('li');
                         line.id = "li" + i.toString();
 
-                        line.innerHTML = '<b>' + player_list[i][1] + ' - </b>';
+                        line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>';
 
                         var word = document.createElement('div');
                         word.id = 'a' + i.toString();
@@ -352,10 +466,12 @@
                     }
                     break;
                 case "ShowWords":
-                    chat.innerHTML = "";
+                    //<div style="min-width:20px; display:inline-block;">⌛</div>
+                    chat.innerText = "";
                     $(submit_container).hide();
+                    $(action_div).removeClass('has_action');
 
-                    players.innerHTML = "";
+                    players.innerText = "";
                     for (var i = 0; i < msg.words.length; i++) {
                         if (msg.words[i] == null) {
                             player_list[i][2] = '';
@@ -367,12 +483,15 @@
 
                         var line = document.createElement('li');
                         line.id = "li" + i.toString();
+                        var player_name = document.createElement('b');
+
 
                         if (i == guess_player) {
-                            line.innerHTML = '<b>' + player_list[i][1] + '*</b>';
+                            player_name.innerText = player_list[i][1] + '*';
                         } else {
-                            line.innerHTML = '<b>' + player_list[i][1] + ' - </b>';
+                            player_name.innerText = player_list[i][1] + ' - ';
                         }
+                        line.appendChild(player_name);
 
                         var word = document.createElement('div');
                         word.id = 'a' + i.toString();
@@ -382,6 +501,13 @@
                         }
                         word.innerText = player_list[i][2];
                         line.appendChild(word);
+
+                        if (i == decision_player) {
+                            var waiting = document.createElement('div');
+                            waiting.style.display = 'inline';
+                            waiting.innerHTML = " " + waiting_animation; //"⌛";
+                            line.appendChild(waiting);
+                        }
 
                         let index = i;
                         let w = word;
@@ -400,9 +526,10 @@
                     }
                     break;
                 case "ShowFilteredWords":
-                    chat.innerHTML = "";
+                    chat.innerText = "";
                     $(filter_container).hide();
-                    players.innerHTML = "";
+                    $(action_div).removeClass('has_action');
+                    players.innerText = "";
                     for (var i = 0; i < msg.words.length; i++) {
                         if (msg.words[i] == null) {
                             if (i != current_player && i == guess_player) {
@@ -411,14 +538,15 @@
                                 player_list[i][2] = '';
                             }
                         } else {
-                            player_list[i][2] = msg.words[i].toString();
+                            player_list[i][2] = sanitizeHTML(msg.words[i].toString());
                         }
                         player_list[i][3] = false;
 
                         var line = document.createElement('li');
                         line.id = "li" + i.toString();
-
-                        line.innerHTML = '<b>' + player_list[i][1] + ' - </b>';
+                        var player_name = document.createElement('b');
+                        player_name.innerText = player_list[i][1] + ' - ';
+                        line.appendChild(player_name);
 
                         var word = document.createElement('div');
                         word.id = 'a' + i.toString();
@@ -429,11 +557,12 @@
                     }
                     break;
                 case "ManualDuplicateEliminationRequest":
-                    chat.innerHTML = "";
+                    chat.innerText = "";
                     var line = document.createElement('p');
                     line.innerText = "Strike out all duplicate words by clicking on them and then submit.";
                     chat.appendChild(line);
                     $(filter_container).show();
+                    $(action_div).addClass('has_action');
                     break;
                 default:
                     var line = document.createElement('p');
@@ -444,12 +573,32 @@
             }
         }
         ws.onopen = function () {
-            chat.innerHTML = "";
+            chat.innerText = "";
         }
         ws.onmessage = function (msg) {
             console.log(msg);
             message(msg.data);
         };
+        ws.onclose = function (event) {
+            if (event.wasClean) {
+                console.log(`[close] Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+            } else {
+                console.log(`[close] Connection died: code=${event.code}, reason=${event.reason}`);
+            }
+
+            // create error pop-up
+            var openModalInside = document.createElement('div');
+            openModalInside.innerText = "The connection to the server was lost. Please refresh the page.";
+            var openModal = document.createElement('div');
+            openModal.id = "openModal";
+            openModal.className = "modalDialog";
+            openModal.appendChild(openModalInside);
+            document.getElementsByTagName('body')[0].appendChild(openModal);
+        };
+        ws.onerror = function (error) {
+            console.log(`[error] ${error.message}`);
+        };
+
         send.onclick = function () {
             var msg = {
                 type: "WordSubmission",
@@ -547,6 +696,16 @@
             ws.send(JSON.stringify(msg));
         };
     </script>
+
+    <div>
+        <h3>User reviews</h3>
+        <blockquote>"I'm going to pick the third-most obvious one" - Andreas</blockquote>
+
+        <blockquote>"I have an obscure hint: how much do you know about Polynesian agricultural societies?" - Ben
+        </blockquote>
+        <blockquote>"Your hint is 'numan'?! What does that even mean?" - Sandra</blockquote>
+        <blockquote>"Two clues left? Only a real chicken would pass" - Michael</blockquote>
+    </div>
 </body>
 
 </html>
