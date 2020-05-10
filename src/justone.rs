@@ -46,26 +46,26 @@ pub enum ClientMessage {
 }
 
 #[derive(Debug)]
-pub struct User {
+pub struct Player {
     pub name: String,
     pub word_guess: Option<String>,
     pub word_stricken: bool,
 }
 
-pub struct Logic {
+pub struct JustOneGame {
     state: State,
     guess_user: usize,
     decision_user: usize,
     client_msg_rx: mpsc::UnboundedReceiver<ClientMessage>,
     pub server_msg_tx: mpsc::UnboundedSender<ServerMessage>,
     word_to_guess: String,
-    users: Vec<User>,
+    users: Vec<Player>,
     words: Vec<String>,
     score: usize,
     words_left: usize,
 }
 
-impl Logic {
+impl JustOneGame {
     pub async fn new_game_cli(num_users: usize) {
         // create a single listener on stdin to process all users
         let (in_channel_req, out_channel_req) = mpsc::unbounded_channel();
@@ -75,7 +75,7 @@ impl Logic {
 
         let mut users = vec![];
         for i in 0..num_users {
-            users.push(User {
+            users.push(Player {
                 name: format!("User{}", i),
                 word_stricken: false,
                 word_guess: None,
@@ -93,7 +93,7 @@ impl Logic {
         let mut rng = thread_rng();
         let word = words.choose(&mut rng).expect("Word list is empty!");
 
-        let mut l = Logic {
+        let mut l = JustOneGame {
             state: State::WordSubmission,
             users,
             client_msg_rx: out_channel,
@@ -120,7 +120,7 @@ impl Logic {
         .collect::<Result<_, _>>()
         .expect("Cannot read lines from word list");
 
-        let mut l = Logic {
+        let mut l = JustOneGame {
             state: State::WaitingForPlayers,
             users: vec![],
             client_msg_rx,
@@ -283,21 +283,6 @@ impl Logic {
     pub async fn process_state(&mut self) {
         'main_loop: loop {
             match &mut self.state {
-                State::Finished => {
-                    // TODO: offer new game
-                    info!("Game is over!");
-
-                    for i in 0..self.users.len() {
-                        if let Err(e) = self
-                            .server_msg_tx
-                            .send(ServerMessage::Finished(i, self.score))
-                        {
-                            error!("Could not send server message to middleware: {}", e);
-                            break 'main_loop;
-                        }
-                    }
-                    break;
-                }
                 State::WaitingForPlayers => {
                     while let Some(res) = self.client_msg_rx.recv().await {
                         match res {
@@ -326,7 +311,7 @@ impl Logic {
                                     }
                                 }
 
-                                self.users.push(User {
+                                self.users.push(Player {
                                     name,
                                     word_guess: None,
                                     word_stricken: false,
@@ -385,6 +370,147 @@ impl Logic {
 
                     self.word_to_guess = word.clone();
                     self.state = State::WordSubmission;
+                }
+                State::WordSubmission => {
+                    info!("New word: {}", self.word_to_guess);
+
+                    // ask for words from other users
+                    for (i, u) in self.users.iter_mut().enumerate() {
+                        u.word_guess = None;
+                        u.word_stricken = false;
+
+                        if i != self.guess_user {
+                            info!("Submitting word request to user {}", i);
+                            if let Err(e) =
+                                self.server_msg_tx
+                                    .send(ServerMessage::WordSubmissionRequest(
+                                        i,
+                                        self.word_to_guess.to_string(),
+                                    ))
+                            {
+                                error!("Could not send server message to middleware: {}", e);
+                                break 'main_loop;
+                            }
+                        }
+                    }
+
+                    while let Some(res) = self.client_msg_rx.recv().await {
+                        match res {
+                            ClientMessage::ResendGameState(i) => {
+                                self.send_full_game_state(i);
+                            }
+                            ClientMessage::StopGame => {
+                                break 'main_loop;
+                            }
+                            ClientMessage::WordSubmissionResponse(i, w) if i != self.guess_user => {
+                                info!("Received word from User{}: {}", i, w);
+                                self.users[i].word_guess = Some(w);
+
+                                if self
+                                    .users
+                                    .iter()
+                                    .enumerate()
+                                    .all(|(i, u)| i == self.guess_user || u.word_guess.is_some())
+                                {
+                                    break;
+                                }
+
+                                // notify all other users of the word submission
+                                for j in 0..self.users.len() {
+                                    if i != j {
+                                        if let Err(e) = self
+                                            .server_msg_tx
+                                            .send(ServerMessage::WordSubmitted(j, i))
+                                        {
+                                            error!(
+                                                "Could not send server message to middleware: {}",
+                                                e
+                                            );
+                                            break 'main_loop;
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {
+                                error!("Received unexpected message in {:?}: {:?}", self.state, res)
+                            }
+                        }
+                    }
+
+                    info!("All guesses received, time for manual duplication");
+                    self.state = State::ManualDuplicateElimination;
+                }
+                State::ManualDuplicateElimination => {
+                    // automatically filter exact duplicates
+                    for i in 0..self.users.len() {
+                        for j in 0..i {
+                            if self.users[i].word_guess.as_ref().map_or(false, |w1| {
+                                self.users[j]
+                                    .word_guess
+                                    .as_ref()
+                                    .map_or(false, |w2| w1.eq_ignore_ascii_case(&w2))
+                            }) {
+                                self.users[i].word_stricken = true;
+                                self.users[j].word_stricken = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // send the words to everyone but the current user
+                    let words: Vec<Option<(String, bool)>> = self
+                        .users
+                        .iter()
+                        .map(|u| u.word_guess.as_ref().map(|x| (x.clone(), u.word_stricken)))
+                        .collect();
+
+                    for i in 0..self.users.len() {
+                        if i != self.guess_user {
+                            if let Err(e) = self
+                                .server_msg_tx
+                                .send(ServerMessage::ShowWords(i, words.clone()))
+                            {
+                                error!("Could not send server message to middleware: {}", e);
+                                break 'main_loop;
+                            }
+                        }
+                    }
+
+                    if let Err(e) =
+                        self.server_msg_tx
+                            .send(ServerMessage::ManualDuplicateEliminationRequest(
+                                self.decision_user,
+                            ))
+                    {
+                        error!("Could not send server message to middleware: {}", e);
+                        break 'main_loop;
+                    }
+
+                    while let Some(res) = self.client_msg_rx.recv().await {
+                        match res {
+                            ClientMessage::ResendGameState(i) => {
+                                self.send_full_game_state(i);
+                            }
+                            ClientMessage::StopGame => {
+                                break 'main_loop;
+                            }
+                            ClientMessage::ManualDuplicateEliminationResponse(i, remove)
+                                if i == self.decision_user =>
+                            {
+                                info!("Received elimination from User{}: {:?}", i, remove);
+
+                                for uid in remove {
+                                    self.users[uid].word_stricken = true;
+                                }
+                                break;
+                            }
+                            _ => {
+                                error!("Received unexpected message in {:?}: {:?}", self.state, res)
+                            }
+                        }
+                    }
+
+                    self.state = State::WordGuess;
                 }
                 State::WordGuess => {
                     // send the filtered words to everyone
@@ -527,146 +653,20 @@ impl Logic {
                         self.state = State::NextRound;
                     }
                 }
-                State::WordSubmission => {
-                    info!("New word: {}", self.word_to_guess);
-
-                    // ask for words from other users
-                    for (i, u) in self.users.iter_mut().enumerate() {
-                        u.word_guess = None;
-                        u.word_stricken = false;
-
-                        if i != self.guess_user {
-                            info!("Submitting word request to user {}", i);
-                            if let Err(e) =
-                                self.server_msg_tx
-                                    .send(ServerMessage::WordSubmissionRequest(
-                                        i,
-                                        self.word_to_guess.to_string(),
-                                    ))
-                            {
-                                error!("Could not send server message to middleware: {}", e);
-                                break 'main_loop;
-                            }
-                        }
-                    }
-
-                    while let Some(res) = self.client_msg_rx.recv().await {
-                        match res {
-                            ClientMessage::ResendGameState(i) => {
-                                self.send_full_game_state(i);
-                            }
-                            ClientMessage::StopGame => {
-                                break 'main_loop;
-                            }
-                            ClientMessage::WordSubmissionResponse(i, w) if i != self.guess_user => {
-                                info!("Received word from User{}: {}", i, w);
-                                self.users[i].word_guess = Some(w);
-
-                                if self
-                                    .users
-                                    .iter()
-                                    .enumerate()
-                                    .all(|(i, u)| i == self.guess_user || u.word_guess.is_some())
-                                {
-                                    break;
-                                }
-
-                                // notify all other users of the word submission
-                                for j in 0..self.users.len() {
-                                    if i != j {
-                                        if let Err(e) = self
-                                            .server_msg_tx
-                                            .send(ServerMessage::WordSubmitted(j, i))
-                                        {
-                                            error!(
-                                                "Could not send server message to middleware: {}",
-                                                e
-                                            );
-                                            break 'main_loop;
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {
-                                error!("Received unexpected message in {:?}: {:?}", self.state, res)
-                            }
-                        }
-                    }
-
-                    info!("All guesses received, time for manual duplication");
-                    self.state = State::ManualDuplicateElimination;
-                }
-                State::ManualDuplicateElimination => {
-                    // automatically filter exact duplicates
-                    for i in 0..self.users.len() {
-                        for j in 0..i {
-                            if self.users[i].word_guess.as_ref().map_or(false, |w1| {
-                                self.users[j]
-                                    .word_guess
-                                    .as_ref()
-                                    .map_or(false, |w2| w1.eq_ignore_ascii_case(&w2))
-                            }) {
-                                self.users[i].word_stricken = true;
-                                self.users[j].word_stricken = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    // send the words to everyone but the current user
-                    let words: Vec<Option<(String, bool)>> = self
-                        .users
-                        .iter()
-                        .map(|u| u.word_guess.as_ref().map(|x| (x.clone(), u.word_stricken)))
-                        .collect();
+                State::Finished => {
+                    // TODO: offer new game
+                    info!("Game is over!");
 
                     for i in 0..self.users.len() {
-                        if i != self.guess_user {
-                            if let Err(e) = self
-                                .server_msg_tx
-                                .send(ServerMessage::ShowWords(i, words.clone()))
-                            {
-                                error!("Could not send server message to middleware: {}", e);
-                                break 'main_loop;
-                            }
+                        if let Err(e) = self
+                            .server_msg_tx
+                            .send(ServerMessage::Finished(i, self.score))
+                        {
+                            error!("Could not send server message to middleware: {}", e);
+                            break 'main_loop;
                         }
                     }
-
-                    if let Err(e) =
-                        self.server_msg_tx
-                            .send(ServerMessage::ManualDuplicateEliminationRequest(
-                                self.decision_user,
-                            ))
-                    {
-                        error!("Could not send server message to middleware: {}", e);
-                        break 'main_loop;
-                    }
-
-                    while let Some(res) = self.client_msg_rx.recv().await {
-                        match res {
-                            ClientMessage::ResendGameState(i) => {
-                                self.send_full_game_state(i);
-                            }
-                            ClientMessage::StopGame => {
-                                break 'main_loop;
-                            }
-                            ClientMessage::ManualDuplicateEliminationResponse(i, remove)
-                                if i == self.decision_user =>
-                            {
-                                info!("Received elimination from User{}: {:?}", i, remove);
-
-                                for uid in remove {
-                                    self.users[uid].word_stricken = true;
-                                }
-                                break;
-                            }
-                            _ => {
-                                error!("Received unexpected message in {:?}: {:?}", self.state, res)
-                            }
-                        }
-                    }
-
-                    self.state = State::WordGuess;
+                    break;
                 }
             }
         }
