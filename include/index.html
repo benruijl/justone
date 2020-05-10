@@ -40,6 +40,7 @@
 
         .list li:hover {
             background-color: #f0f0f0;
+            transition: all 0.2s;
             -webkit-transition: all 0.2s;
             -moz-transition: all 0.2s;
             -ms-transition: all 0.2s;
@@ -502,7 +503,7 @@
                         word.innerText = player_list[i][2];
                         line.appendChild(word);
 
-                        if (i == decision_player) {
+                        if (i == decision_player && decision_player != current_player) {
                             var waiting = document.createElement('div');
                             waiting.style.display = 'inline';
                             waiting.innerHTML = " " + waiting_animation; //"⌛";

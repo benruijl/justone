@@ -17,22 +17,21 @@ use slog::{Drain, Duplicate, Level, LevelFilter};
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
+use tokio::time::delay_for;
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
 mod logic;
 
 struct User {
-    id: usize,
     name: String,
     password: String,
-    connected: bool,
     tx: mpsc::UnboundedSender<Result<Message, warp::Error>>,
 }
 
 struct Game {
-    id: String,
     started: bool, // still accepting new players?
     client_sender: mpsc::UnboundedSender<logic::ClientMessage>,
     users: Vec<User>,
@@ -200,13 +199,6 @@ async fn forward_server_message(
 
     while let Some(req) = server_message_rx.next().await {
         let (i, m) = match &req {
-            logic::ServerMessage::Reconnecting(i) => (
-                i,
-                json!({
-                    "type": "Reconnecting",
-                    "id": i,
-                }),
-            ),
             logic::ServerMessage::UserAdded(i, username) => (
                 i,
                 json!({
@@ -329,14 +321,10 @@ async fn new_ws_connection(
     _query_options: QueryOptions,
     server_state: Arc<Mutex<ServerState>>,
 ) {
-    // Use a counter to assign a new unique ID for this user.
     info!("New user connected to websocket: {:?}", remote_addr);
 
-    // Split the socket into a sender and receive of messages.
     let (user_ws_tx, mut user_ws_rx) = ws.split();
 
-    // Use an unbounded channel to handle buffering and flushing of messages
-    // to the websocket...
     let (tx, rx) = mpsc::unbounded_channel();
     tokio::task::spawn(rx.forward(user_ws_tx).map(|result| {
         if let Err(e) = result {
@@ -384,10 +372,8 @@ async fn new_ws_connection(
                             client_id = Some(0); // using the index as the id is not very flexible
 
                             let user = User {
-                                id: 0,
                                 name: name.clone(),
                                 password,
-                                connected: true,
                                 tx: tx.clone(),
                             };
 
@@ -406,12 +392,25 @@ async fn new_ws_connection(
                                     games.insert(
                                         game_id.clone(),
                                         Game {
-                                            id: game_id.clone(),
                                             client_sender: c_tx.clone(),
                                             users: vec![user],
                                             started: false,
                                         },
                                     );
+
+                                    // remove abandoned games after 90 minutes
+                                    let game_id = game_id.clone();
+                                    let c_tx_abandon = c_tx.clone();
+                                    tokio::spawn(async move {
+                                        delay_for(Duration::from_secs(90 * 60)).await;
+
+                                        info!("Closing game {} due to timeout", game_id);
+                                        c_tx_abandon
+                                            .send(logic::ClientMessage::StopGame)
+                                            .unwrap_or_else(|e| {
+                                                debug!("Game {} already closed: {}", game_id, e)
+                                            });
+                                    });
                                     break;
                                 }
 
@@ -485,10 +484,8 @@ async fn new_ws_connection(
                                     client_id = Some(game.users.len());
 
                                     let user = User {
-                                        id: client_id.unwrap(),
                                         name: name.clone(),
                                         password,
-                                        connected: true,
                                         tx: tx.clone(),
                                     };
 
@@ -564,6 +561,5 @@ async fn new_ws_connection(
         };
     }
 
-    // TODO: set the disconnected state
     info!("User disconnected: {:?}", remote_addr);
 }
