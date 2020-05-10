@@ -2,7 +2,12 @@
 name = "justone"
 version = "0.1.0"
 authors = ["Ben Ruijl <benruyl@gmail.com>"]
+repository = "https://github.com/benruijl/justone"
+keywords = ["game", "web"]
 edition = "2018"
+license = "MIT"
+readme = "README.md"
+description = "A web version of Just One"
 
 [dependencies]
 warp = { version = "*", features = ["tls"] }
