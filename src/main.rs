@@ -6,6 +6,7 @@ extern crate slog_scope;
 extern crate serde_derive;
 
 use clap::{App, Arg};
+use justone::WordList;
 use slog::{Drain, Duplicate, Level, LevelFilter};
 
 pub mod justone;
@@ -72,7 +73,7 @@ async fn start() {
         .get_matches();
 
     if cli_options.is_present("cli") {
-        justone::JustOneGame::new_game_cli(2).await;
+        justone::JustOneGame::new_game_cli(2, WordList::English).await;
     } else {
         server::start(&cli_options).await
     }

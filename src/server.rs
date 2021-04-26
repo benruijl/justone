@@ -13,7 +13,7 @@ use tokio::time::delay_for;
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
-use crate::justone;
+use crate::justone::{self, WordList};
 
 struct User {
     name: String,
@@ -34,6 +34,7 @@ enum ClientMessage {
         game_id: String,
         name: String,
         password: String,
+        word_list: WordList,
     },
     WordSubmission {
         word: String,
@@ -291,6 +292,7 @@ async fn new_ws_connection(
                         mut game_id,
                         name,
                         password,
+                        word_list,
                     } => {
                         let games = &mut server_state.lock().await.games;
 
@@ -298,7 +300,7 @@ async fn new_ws_connection(
                             // create a new game
                             let (c_tx, c_rx) = mpsc::unbounded_channel();
                             let (s_tx, s_rx) = mpsc::unbounded_channel();
-                            tokio::spawn(justone::JustOneGame::new_game(c_rx, s_tx));
+                            tokio::spawn(justone::JustOneGame::new_game(c_rx, s_tx, word_list));
 
                             client_sender = Some(c_tx.clone());
                             client_id = Some(0); // using the index as the id is not very flexible

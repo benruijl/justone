@@ -239,6 +239,11 @@
             </div>
             <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
                     placeholder="for reconnecting" id="password_text" /></div>
+            <div><span style="min-width: 150px; display: inline-block;">Word list:</span><select style="width:158px" name="word_list_select" id="word_list_select">
+                    <option value="english">English</option>
+                    <option value="hungarian">Hungarian</option>
+                  </select>
+            </div>
             <button type="button" id="name_send" disabled>New Game</button>
 
             <script type="text/javascript">
@@ -691,6 +696,7 @@
                 name: name_text.value,
                 password: password_text.value,
                 game_id: game_id_text.value,
+                word_list: word_list_select.value,
             };
 
             console.log(JSON.stringify(msg))
@@ -699,7 +705,7 @@
     </script>
 
     <div>
-        <h3>User reviews</h3>
+        <h3>User comments</h3>
         <blockquote>"I'm going to pick the third-most obvious one" - Andreas</blockquote>
 
         <blockquote>"I have an obscure hint: how much do you know about Polynesian agricultural societies?" - Ben

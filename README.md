@@ -18,4 +18,4 @@ Screenshots
 
 Development
 -----------
-Any suggestions and patches are welcome!
+Any suggestions, word lists, and patches are welcome!

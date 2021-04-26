@@ -7,6 +7,14 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 use tokio::time::delay_for;
 
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
+pub enum WordList {
+    #[serde(rename = "english")]
+    English,
+    #[serde(rename = "hungarian")]
+    Hungarian,
+}
+
 #[derive(Debug, PartialEq)]
 enum State {
     WaitingForPlayers,
@@ -66,7 +74,19 @@ pub struct JustOneGame {
 }
 
 impl JustOneGame {
-    pub async fn new_game_cli(num_users: usize) {
+    pub fn read_word_list(word_list: WordList) -> Vec<String> {
+        let filename = match word_list {
+            WordList::English => "include/words_en.txt",
+            WordList::Hungarian => "include/words_hu.txt",
+        };
+
+        std::io::BufReader::new(File::open(filename).expect("Cannot open word list"))
+            .lines()
+            .collect::<Result<_, _>>()
+            .expect("Cannot read lines from word list")
+    }
+
+    pub async fn new_game_cli(num_users: usize, word_list: WordList) {
         // create a single listener on stdin to process all users
         let (in_channel_req, out_channel_req) = mpsc::unbounded_channel();
         let (in_channel, out_channel) = mpsc::unbounded_channel();
@@ -82,12 +102,7 @@ impl JustOneGame {
             })
         }
 
-        let words: Vec<String> = std::io::BufReader::new(
-            File::open("include/words_en.txt").expect("Cannot open word list"),
-        )
-        .lines()
-        .collect::<Result<_, _>>()
-        .expect("Cannot read lines from word list");
+        let words = JustOneGame::read_word_list(word_list);
 
         // generate random word
         let mut rng = thread_rng();
@@ -112,13 +127,9 @@ impl JustOneGame {
     pub async fn new_game(
         client_msg_rx: mpsc::UnboundedReceiver<ClientMessage>,
         server_msg_tx: mpsc::UnboundedSender<ServerMessage>,
+        word_list: WordList,
     ) {
-        let words: Vec<String> = std::io::BufReader::new(
-            File::open("include/words_en.txt").expect("Cannot open word list"),
-        )
-        .lines()
-        .collect::<Result<_, _>>()
-        .expect("Cannot read lines from word list");
+        let words = JustOneGame::read_word_list(word_list);
 
         let mut l = JustOneGame {
             state: State::WaitingForPlayers,
