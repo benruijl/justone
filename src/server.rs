@@ -30,11 +30,17 @@ struct Game {
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
 enum ClientMessage {
-    Register {
+    NewGame {
         game_id: String,
         name: String,
         password: String,
         word_list: WordList,
+        word_count: usize,
+    },
+    JoinGame {
+        game_id: String,
+        name: String,
+        password: String,
     },
     WordSubmission {
         word: String,
@@ -256,6 +262,8 @@ async fn new_ws_connection(
 ) {
     info!("New user connected to websocket: {:?}", remote_addr);
 
+    // TODO: filter connections when spammed
+
     let (user_ws_tx, mut user_ws_rx) = ws.split();
 
     let (tx, rx) = mpsc::unbounded_channel();
@@ -288,19 +296,21 @@ async fn new_ws_connection(
                 };
 
                 match client_message {
-                    ClientMessage::Register {
+                    ClientMessage::NewGame {
                         mut game_id,
                         name,
                         password,
                         word_list,
+                        word_count,
                     } => {
                         let games = &mut server_state.lock().await.games;
 
+                        // TODO: limit number of new games?
                         if game_id.is_empty() || !games.contains_key(&game_id) {
                             // create a new game
                             let (c_tx, c_rx) = mpsc::unbounded_channel();
                             let (s_tx, s_rx) = mpsc::unbounded_channel();
-                            tokio::spawn(justone::JustOneGame::new_game(c_rx, s_tx, word_list));
+                            tokio::spawn(justone::JustOneGame::new_game(c_rx, s_tx, word_list, word_count));
 
                             client_sender = Some(c_tx.clone());
                             client_id = Some(0); // using the index as the id is not very flexible
@@ -356,7 +366,25 @@ async fn new_ws_connection(
                                 .unwrap_or_else(|e| {
                                     info!("Error sending NewPlayer to server: {}", e)
                                 });
-                        } else if let Some(game) = games.get_mut(&game_id) {
+                        } else {
+                            let m = json!({
+                                "type": "Rejected",
+                                "reason": "the game id already exists",
+                            });
+                            tx.send(Ok(Message::text(m.to_string())))
+                                .unwrap_or_else(|e| {
+                                    info!("Error sending {:?} to client: {}", m, e)
+                                });
+                        }
+                    }
+                    ClientMessage::JoinGame {
+                        game_id,
+                        name,
+                        password,
+                    } => {
+                        let games = &mut server_state.lock().await.games;
+
+                        if let Some(game) = games.get_mut(&game_id) {
                             client_sender = Some(game.client_sender.clone());
 
                             // attempt to join an existing game
@@ -366,10 +394,6 @@ async fn new_ws_connection(
                                 if u.name == name {
                                     new_player = false;
                                     if u.password == password {
-                                        warn!(
-                                            "User {} reconnecting: partially implemented",
-                                            u.name
-                                        );
                                         u.tx = tx.clone();
                                         client_id = Some(u_i);
 
@@ -433,7 +457,14 @@ async fn new_ws_connection(
                                 }
                             }
                         } else {
-                            unreachable!()
+                            let m = json!({
+                                "type": "Rejected",
+                                "reason": "the game id does not exist",
+                            });
+                            tx.send(Ok(Message::text(m.to_string())))
+                                .unwrap_or_else(|e| {
+                                    info!("Error sending {:?} to client: {}", m, e)
+                                });
                         }
                     }
                     ClientMessage::WordSubmission { word } if client_id.is_some() => {

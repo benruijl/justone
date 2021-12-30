@@ -131,6 +131,7 @@ impl JustOneGame {
         client_msg_rx: mpsc::UnboundedReceiver<ClientMessage>,
         server_msg_tx: mpsc::UnboundedSender<ServerMessage>,
         word_list: WordList,
+        word_count: usize,
     ) {
         let words = JustOneGame::read_word_list(word_list);
 
@@ -143,7 +144,7 @@ impl JustOneGame {
             decision_user: 1,
             word_to_guess: String::new(),
             score: 0,
-            words_left: 13,
+            words_left: word_count,
             words,
         };
 
@@ -379,6 +380,7 @@ impl JustOneGame {
                     }
 
                     // generate random word
+                    // TODO: filter words selected before
                     let mut rng = thread_rng();
                     let word = self.words.choose(&mut rng).expect("Word list is empty!");
 

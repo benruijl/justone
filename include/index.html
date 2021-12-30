@@ -2,7 +2,12 @@
 <html>
 
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet'>
     <title>Just One</title>
 
@@ -59,7 +64,8 @@
         .has_action {
             border: 2px solid #da6826;
             border-radius: 5px;
-            padding: 0px 10px 10px 10px;
+            padding: 10px 10px 10px 10px;
+            margin: 10px 0px 10px 0px;
         }
 
         @keyframes blink {
@@ -178,6 +184,25 @@
             color: white;
             background: #993933;
         }
+
+        .tab-content {
+            height: auto;
+            background: #fff;
+            color: #000;
+            border-radius: 15px;
+            box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            margin-bottom: 50px;
+        }
+
+        .nav-item {
+            width: 49%;
+        }
+
+        .nav-pills .nav-link {
+            text-align: center;
+            border-radius: 15px;
+        }
     </style>
 </head>
 
@@ -228,51 +253,86 @@
             <button type="button" id="filter_send">Submit</button>
         </div>
 
-        <div id="start_container" style="display: none;">
-            <button type="button" id="start_send">Start the game!</button>
-        </div>
-
-        <div id="name_container">
-            <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
-                    placeholder="New game" id="game_id_text" /></div>
-            <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text" id="name_text" />
-            </div>
-            <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
-                    placeholder="for reconnecting" id="password_text" /></div>
-            <div><span style="min-width: 150px; display: inline-block;">Word list:</span><select style="width:158px" name="word_list_select" id="word_list_select">
-                    <option value="english">English</option>
-                    <option value="hungarian">Hungarian</option>
-                    <option value="italian">Italian</option>
-                  </select>
-            </div>
-            <button type="button" id="name_send" disabled>New Game</button>
-
-            <script type="text/javascript">
-                let params = new URLSearchParams(window.location.search);
-                let game_id = params.get('game_id');
-                if (game_id != null) {
-                    game_id_text.value = game_id;
-                    name_send.innerText = 'Join';
-                }
-
-                name_text.onkeyup = function () {
-                    name_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
-                }
-
-                password_text.onkeyup = function () {
-                    name_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
-                }
-
-                game_id_text.onkeyup = function () {
-                    if (game_id_text.value.length > 0) {
-                        name_send.innerText = 'Join';
-                    } else {
-                        name_send.innerText = 'New game';
-                    }
-                };
-            </script>
+        <div id="start_container" style="display: none; text-align: center;">
+            <button type="button" id="start_send" title="At least one player needs to join to start the game" disabled>Start the game!</button>
         </div>
     </div>
+    <div id="register_container">
+        <ul class="nav nav-pills" role="tablist">
+            <li class="nav-item active">
+                <a class="nav-link active" data-toggle="pill" href="#join">Join game</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#newgame">New game</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div id="join" class="tab-pane fade in active">
+                <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
+                        placeholder="existing game ID" id="game_id_text" /></div>
+                <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
+                        id="name_text" />
+                </div>
+                <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
+                        placeholder="for reconnecting" id="password_text" /></div>
+                <button type="button" id="join_game_send" disabled>Join</button>
+
+                <script type="text/javascript">
+                    var params = new URLSearchParams(window.location.search);
+                    var game_id = params.get('game_id');
+                    if (game_id != null) {
+                        game_id_text.value = game_id;
+                    }
+
+                    name_text.onkeyup = function () {
+                        join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                    }
+
+                    password_text.onkeyup = function () {
+                        join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                    }
+                </script>
+            </div>
+            <div id="newgame" class="tab-pane fade">
+                <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
+                        placeholder="Empty=random id" id="new_game_id_text" /></div>
+                <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
+                        id="new_name_text" />
+                </div>
+                <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
+                        placeholder="for reconnecting" id="new_password_text" /></div>
+                <div><span style="min-width: 150px; display: inline-block;">Word list:</span><select style="width:158px"
+                        name="word_list_select" id="word_list_select">
+                        <option value="english">English</option>
+                        <option value="hungarian">Hungarian</option>
+                        <option value="italian">Italian</option>
+                    </select>
+                </div>
+                <div><span style="min-width: 150px; display: inline-block;">Word count:</span><input type="number"
+                        id="word_count" min="2" max="100" value="13">
+                </div>
+                <button type="button" id="new_game_send" disabled>New Game</button>
+
+                <script type="text/javascript">
+                    var params = new URLSearchParams(window.location.search);
+                    var game_id = params.get('game_id');
+                    if (game_id != null) {
+                        new_game_id_text.value = game_id;
+                    }
+
+                    new_name_text.onkeyup = function () {
+                        new_game_send.disabled = new_name_text.value.length == 0 || new_password_text.value.length == 0;
+                    }
+
+                    new_password_text.onkeyup = function () {
+                        new_game_send.disabled = new_name_text.value.length == 0 || new_password_text.value.length == 0;
+                    }
+                </script>
+            </div>
+        </div>
+    </div>
+
 
     <div id="score_container" style="text-align: center; display: none; margin-top: 10px;">
         <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
@@ -313,12 +373,12 @@
             var msg = JSON.parse(data);
             switch (msg.type) {
                 case "Rejected":
-                    chat.innerText = "Could not join game: " + msg.reason + ".";
+                    chat.innerText = "Error: " + msg.reason + ".";
                     $(action_div).addClass('has_action');
                     reconnecting = true;
                     break;
                 case "Reconnecting":
-                    $(name_container).hide();
+                    $(register_container).hide();
                     $(action_div).removeClass('has_action');
                     chat.innerText = "You will be reconnected to the game once it reaches a checkpoint.";
                     break;
@@ -342,9 +402,11 @@
                     break;
                 case "UserAdded":
                     current_player = msg.id; // set the id of the current client
-                    $(name_container).hide();
+                    $(register_container).hide();
+                    $(action_div).removeClass('has_action');
+                    chat.innerText = "Waiting for players to join and for the host to start the game";
                     var line = document.createElement('li');
-                    line.innerHTML = '<b>' + sanitizeHTML(msg.username) + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>no word yet</emph></div>';
+                    line.innerHTML = '<b>' + sanitizeHTML(msg.username) + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>joined</emph></div>';
                     player_list.push([-100, msg.username.toString(), "", false]);
                     players.appendChild(line);
 
@@ -359,9 +421,13 @@
                         chat.appendChild(line);
                     }
 
-                    if (player_list.length > 1 && current_player == 0) {
+
+                    if (current_player == 0) {
                         $(start_container).show();
+                        start_send.disabled = player_list.length < 2;
                         $(action_div).removeClass('has_action');
+                    } else {
+                        chat.innerText = "Waiting for the host to start the game...";
                     }
 
                     break;
@@ -393,7 +459,7 @@
                     if (guess_player == current_player) {
                         chat.innerText = "";
                         var line = document.createElement('p');
-                        line.innerText = "You are the player who has to guess the word!";
+                        line.innerText = "You are the player who has to guess the word! Waiting for the hints...";
                         chat.appendChild(line);
                     }
                     break;
@@ -691,13 +757,26 @@
             ws.send(JSON.stringify(msg));
         };
 
-        name_send.onclick = function () {
+        join_game_send.onclick = function () {
             var msg = {
-                type: "Register",
+                type: "JoinGame",
                 name: name_text.value,
                 password: password_text.value,
                 game_id: game_id_text.value,
+            };
+
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+
+        new_game_send.onclick = function () {
+            var msg = {
+                type: "NewGame",
+                name: new_name_text.value,
+                password: new_password_text.value,
+                game_id: new_game_id_text.value,
                 word_list: word_list_select.value,
+                word_count: parseInt(word_count.value),
             };
 
             console.log(JSON.stringify(msg))
