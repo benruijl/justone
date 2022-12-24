@@ -15,6 +15,8 @@ pub enum WordList {
     Hungarian,
     #[serde(rename = "italian")]
     Italian,
+    #[serde(rename = "french")]
+    French,
 }
 
 #[derive(Debug, PartialEq)]
@@ -81,6 +83,7 @@ impl JustOneGame {
             WordList::English => "include/words_en.txt",
             WordList::Hungarian => "include/words_hu.txt",
             WordList::Italian => "include/words_it.txt",
+            WordList::French => "include/words_fr.txt",
         };
 
         std::io::BufReader::new(File::open(filename).expect("Cannot open word list"))
