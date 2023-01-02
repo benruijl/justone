@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
-use tokio::time::delay_for;
+use tokio::time::sleep;
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 pub enum WordList {
@@ -612,12 +612,12 @@ impl JustOneGame {
                     }
 
                     if self.users[self.guess_user].word_guess.is_none() {
-                        delay_for(Duration::from_secs(10)).await;
+                        sleep(Duration::from_secs(10)).await;
 
                         // the player passed: forward to next round
                         self.words_left -= 1;
                     } else {
-                        delay_for(Duration::from_secs(2)).await;
+                        sleep(Duration::from_secs(2)).await;
 
                         if let Err(e) = self
                             .server_msg_tx
