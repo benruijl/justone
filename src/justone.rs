@@ -15,6 +15,8 @@ pub enum WordList {
     Hungarian,
     #[serde(rename = "italian")]
     Italian,
+    #[serde(rename = "german")]
+    German,
     #[serde(rename = "french")]
     French,
 }
@@ -83,6 +85,7 @@ impl JustOneGame {
             WordList::English => "include/words_en.txt",
             WordList::Hungarian => "include/words_hu.txt",
             WordList::Italian => "include/words_it.txt",
+            WordList::German => "include/words_de.txt",
             WordList::French => "include/words_fr.txt",
         };
 
