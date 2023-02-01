@@ -1,17 +1,18 @@
 [package]
 name = "justone"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ben Ruijl <benruyl@gmail.com>"]
 repository = "https://github.com/benruijl/justone"
 keywords = ["game", "web"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 readme = "README.md"
 description = "A web version of Just One"
 
 [dependencies]
-warp = { version = "0.2", features = ["tls"] }
-tokio = { version = "0.2", features = ["full", "io-util", "io-std", "sync"] }
+warp = { version = "0.3", features = ["tls"] }
+tokio = { version = "1.2", features = ["full", "io-util", "io-std", "sync"] }
+tokio-stream = "0.1"
 futures = "0.3"
 log = "0.4"
 serde = "1.0"

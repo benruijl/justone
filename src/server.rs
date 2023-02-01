@@ -1,15 +1,16 @@
+use futures::{FutureExt, StreamExt};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 use clap::ArgMatches;
-use futures::{FutureExt, StreamExt};
 use serde_json::json;
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
-use tokio::time::delay_for;
+use tokio::time::sleep;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
@@ -61,8 +62,9 @@ struct ServerState {
     games: HashMap<String, Game>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct QueryOptions {
+    #[allow(dead_code)]
     game_id: Option<String>,
 }
 
@@ -130,7 +132,7 @@ async fn forward_server_message(
 ) {
     let mut game_started = false;
 
-    while let Some(req) = server_message_rx.next().await {
+    while let Some(req) = server_message_rx.recv().await {
         let (i, m) = match &req {
             justone::ServerMessage::UserAdded(i, username) => (
                 i,
@@ -266,12 +268,16 @@ async fn new_ws_connection(
 
     let (user_ws_tx, mut user_ws_rx) = ws.split();
 
-    let (tx, rx) = mpsc::unbounded_channel();
-    tokio::task::spawn(rx.forward(user_ws_tx).map(|result| {
-        if let Err(e) = result {
-            eprintln!("websocket send error: {}", e);
-        }
-    }));
+    let (tx, rx) = mpsc::unbounded_channel::<Result<Message, warp::Error>>();
+    tokio::task::spawn(
+        UnboundedReceiverStream::new(rx)
+            .forward(user_ws_tx)
+            .map(|result| {
+                if let Err(e) = result {
+                    eprintln!("websocket send error: {}", e);
+                }
+            }),
+    );
 
     let mut client_sender = None;
     let mut client_id = None;
@@ -310,7 +316,9 @@ async fn new_ws_connection(
                             // create a new game
                             let (c_tx, c_rx) = mpsc::unbounded_channel();
                             let (s_tx, s_rx) = mpsc::unbounded_channel();
-                            tokio::spawn(justone::JustOneGame::new_game(c_rx, s_tx, word_list, word_count));
+                            tokio::spawn(justone::JustOneGame::new_game(
+                                c_rx, s_tx, word_list, word_count,
+                            ));
 
                             client_sender = Some(c_tx.clone());
                             client_id = Some(0); // using the index as the id is not very flexible
@@ -346,7 +354,7 @@ async fn new_ws_connection(
                                     let game_id = game_id.clone();
                                     let c_tx_abandon = c_tx.clone();
                                     tokio::spawn(async move {
-                                        delay_for(Duration::from_secs(90 * 60)).await;
+                                        sleep(Duration::from_secs(90 * 60)).await;
 
                                         info!("Closing game {} due to timeout", game_id);
                                         c_tx_abandon
