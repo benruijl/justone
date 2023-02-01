@@ -1,213 +1,213 @@
 <!DOCTYPE html>
 <html>
 
-    <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet'>
-        <title>Just One</title>
+    <title>Just One</title>
 
-        <style>
-            body {
-                background-color: #f5f5f5;
-                width: 600px;
-                margin: 0 auto;
-                padding: 0;
+    <style>
+        body {
+            background-color: #f5f5f5;
+            width: 600px;
+            margin: 0 auto;
+            padding: 0;
             font-family: 'Abel';
-                font-size: 22px;
-            }
+            font-size: 22px;
+        }
 
-            h4 {
-                font-size: 42px;
-                text-align: center;
-            }
+        h4 {
+            font-size: 42px;
+            text-align: center;
+        }
 
-            .list {
-                color: #555;
-                font-size: 22px;
-                padding: 0 !important;
-                font-family: courier, monospace;
-                border: 1px solid #dedede;
-            }
+        .list {
+            color: #555;
+            font-size: 22px;
+            padding: 0 !important;
+            font-family: courier, monospace;
+            border: 1px solid #dedede;
+        }
 
-            .list li {
-                list-style: none;
-                border-bottom: 1px dotted #ccc;
-                text-indent: 25px;
-                height: auto;
-                padding: 10px;
-                text-transform: capitalize;
-            }
+        .list li {
+            list-style: none;
+            border-bottom: 1px dotted #ccc;
+            text-indent: 25px;
+            height: auto;
+            padding: 10px;
+            text-transform: capitalize;
+        }
 
-            .list li:hover {
-                background-color: #f0f0f0;
-                transition: all 0.2s;
-                -webkit-transition: all 0.2s;
-                -moz-transition: all 0.2s;
-                -ms-transition: all 0.2s;
-                -o-transition: all 0.2s;
-            }
+        .list li:hover {
+            background-color: #f0f0f0;
+            transition: all 0.2s;
+            -webkit-transition: all 0.2s;
+            -moz-transition: all 0.2s;
+            -ms-transition: all 0.2s;
+            -o-transition: all 0.2s;
+        }
 
-            .lines {
-                border-left: 1px solid #ffaa9f;
-                border-right: 1px solid #ffaa9f;
-                width: 2px;
-                float: left;
-                height: 0px;
-                margin-left: 40px;
-            }
+        .lines {
+            border-left: 1px solid #ffaa9f;
+            border-right: 1px solid #ffaa9f;
+            width: 2px;
+            float: left;
+            height: 0px;
+            margin-left: 40px;
+        }
 
-            .has_action {
-                border: 2px solid #da6826;
-                border-radius: 5px;
-                padding: 10px 10px 10px 10px;
-                margin: 10px 0px 10px 0px;
-            }
+        .has_action {
+            border: 2px solid #da6826;
+            border-radius: 5px;
+            padding: 10px 10px 10px 10px;
+            margin: 10px 0px 10px 0px;
+        }
 
-            @keyframes blink {
+        @keyframes blink {
 
-                /**
+            /**
      * At the start of the animation the dot
      * has an opacity of .2
      */
-                0% {
+            0% {
                 opacity: .2;
-                }
+            }
 
-                /**
+            /**
      * At 20% the dot is fully visible and
      * then fades out slowly
      */
-                20% {
-                    opacity: 1;
-                }
+            20% {
+                opacity: 1;
+            }
 
-                /**
+            /**
      * Until it reaches an opacity of .2 and
      * the animation can start again
      */
-                100% {
+            100% {
                 opacity: .2;
-                }
             }
+        }
 
-            .saving span {
-                /**
+        .saving span {
+            /**
      * Use the blink animation, which is defined above
      */
-                animation-name: blink;
-                /**
+            animation-name: blink;
+            /**
      * The animation should take 1.4 seconds
      */
-                animation-duration: 1.4s;
-                /**
+            animation-duration: 1.4s;
+            /**
      * It will repeat itself forever
      */
-                animation-iteration-count: infinite;
-                /**
+            animation-iteration-count: infinite;
+            /**
      * This makes sure that the starting style (opacity: .2)
      * of the animation is applied before the animation starts.
      * Otherwise we would see a short flash or would have
      * to set the default styling of the dots to the same
      * as the animation. Same applies for the ending styles.
      */
-                animation-fill-mode: both;
-            }
+            animation-fill-mode: both;
+        }
 
-            .saving span:nth-child(2) {
-                /**
+        .saving span:nth-child(2) {
+            /**
      * Starts the animation of the third dot
      * with a delay of .2s, otherwise all dots
      * would animate at the same time
      */
             animation-delay: .2s;
-            }
+        }
 
-            .saving span:nth-child(3) {
-                /**
+        .saving span:nth-child(3) {
+            /**
      * Starts the animation of the third dot
      * with a delay of .4s, otherwise all dots
      * would animate at the same time
      */
             animation-delay: .4s;
-            }
+        }
 
-            blockquote {
-                background: #f9f9f9;
-                border-left: 10px solid #ccc;
-                margin: 1.5em 10px;
-                padding: 0.5em 10px;
-                quotes: "\201C""\201D""\2018""\2019";
-            }
+        blockquote {
+            background: #f9f9f9;
+            border-left: 10px solid #ccc;
+            margin: 1.5em 10px;
+            padding: 0.5em 10px;
+            quotes: "\201C""\201D""\2018""\2019";
+        }
 
-            blockquote:before {
-                color: #ccc;
-                content: open-quote;
-                font-size: 4em;
-                line-height: 0.1em;
-                margin-right: 0.25em;
-                vertical-align: -0.4em;
-            }
+        blockquote:before {
+            color: #ccc;
+            content: open-quote;
+            font-size: 4em;
+            line-height: 0.1em;
+            margin-right: 0.25em;
+            vertical-align: -0.4em;
+        }
 
-            blockquote p {
-                display: inline;
-            }
+        blockquote p {
+            display: inline;
+        }
 
-            #pass_send {
-                padding: 5px 35px 10px 5px;
+        #pass_send {
+            padding: 5px 35px 10px 5px;
             background: #f0f0f0 url(http://icons.iconarchive.com/icons/google/noto-emoji-animals-nature/64/22266-chicken-icon.png);
-                background-position: 40px 0px;
-                background-size: 30px 30px;
-                background-repeat: no-repeat;
-            }
+            background-position: 40px 0px;
+            background-size: 30px 30px;
+            background-repeat: no-repeat;
+        }
 
-            .modalDialog {
-                position: fixed;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                opacity: 1;
-            }
+        .modalDialog {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 1;
+        }
 
         .modalDialog>div {
-                width: 400px;
-                position: relative;
-                margin: 10% auto;
-                padding: 5px 20px 13px 20px;
-                text-align: center;
-                border-radius: 10px;
-                color: white;
-                background: #993933;
-            }
+            width: 400px;
+            position: relative;
+            margin: 10% auto;
+            padding: 5px 20px 13px 20px;
+            text-align: center;
+            border-radius: 10px;
+            color: white;
+            background: #993933;
+        }
 
-            .tab-content {
-                height: auto;
-                background: #fff;
-                color: #000;
-                border-radius: 15px;
-                box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.4);
-                padding: 30px;
-                margin-bottom: 50px;
-            }
+        .tab-content {
+            height: auto;
+            background: #fff;
+            color: #000;
+            border-radius: 15px;
+            box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            margin-bottom: 50px;
+        }
 
-            .nav-item {
-                width: 49%;
-            }
+        .nav-item {
+            width: 49%;
+        }
 
-            .nav-pills .nav-link {
-                text-align: center;
-                border-radius: 15px;
-            }
-        </style>
-    </head>
+        .nav-pills .nav-link {
+            text-align: center;
+            border-radius: 15px;
+        }
+    </style>
+</head>
 
-    <body>
-        <h4>JUST ONE</h4>
+<body>
+    <h4>JUST ONE</h4>
 
     <div id="lined" class="lines"></div>
 
@@ -215,91 +215,91 @@
     </ul>
 
     <div id="action_div" class="">
-            <div id="chat">
-                <p><em>Connecting to game...</em></p>
-            </div>
+        <div id="chat">
+            <p><em>Connecting to game...</em></p>
+        </div>
 
         <div id="submit_container" style="display: none;">
             <input type="text" id="text" />
             <button type="button" id="send" autofocus>Submit hint</button>
 
-                <script type="text/javascript">
-                    text.onkeyup = function (e) {
-                        if (e.key == "Enter") {
-                            send.click();
-                        }
-                    };
-                </script>
-            </div>
+            <script type="text/javascript">
+                text.onkeyup = function (e) {
+                    if (e.key == "Enter") {
+                        send.click();
+                    }
+                };
+            </script>
+        </div>
 
         <div id="guess_container" style="display: none;">
             <input type="text" id="guess_text" />
             <button type="button" id="guess_send" disabled>Submit guess</button>
             <button type="button" id="pass_send">Pass</button>
 
-                <script type="text/javascript">
-                    guess_text.onkeyup = function () {
-                        guess_send.disabled = guess_text.value.length == 0;
+            <script type="text/javascript">
+                guess_text.onkeyup = function () {
+                    guess_send.disabled = guess_text.value.length == 0;
                 }
-                </script>
-            </div>
+            </script>
+        </div>
 
         <div id="accept_container" style="display: none;">
             <button type="button" id="accept_send">Accept guess</button>
             <button type="button" id="reject_send">Reject guess</button>
-            </div>
+        </div>
 
         <div id="filter_container" style="display: none;">
             <button type="button" id="filter_send">Submit</button>
-            </div>
+        </div>
 
         <div id="start_container" style="display: none; text-align: center;">
             <button type="button" id="start_send" title="At least one player needs to join to start the game" disabled>Start the game!</button>
-            </div>
         </div>
-        <div id="register_container">
+    </div>
+    <div id="register_container">
         <ul class="nav nav-pills" role="tablist">
-                <li class="nav-item active">
+            <li class="nav-item active">
                 <a class="nav-link active" data-toggle="pill" href="#join">Join game</a>
-                </li>
-                <li class="nav-item">
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" data-toggle="pill" href="#newgame">New game</a>
-                </li>
-            </ul>
+            </li>
+        </ul>
 
-            <div class="tab-content">
+        <div class="tab-content">
             <div id="join" class="tab-pane fade in active">
                 <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
                         placeholder="existing game ID" id="game_id_text" /></div>
                 <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
-                            id="name_text" />
-                    </div>
+                        id="name_text" />
+                </div>
                 <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
                         placeholder="for reconnecting" id="password_text" /></div>
                 <button type="button" id="join_game_send" disabled>Join</button>
 
-                    <script type="text/javascript">
-                        var params = new URLSearchParams(window.location.search);
+                <script type="text/javascript">
+                    var params = new URLSearchParams(window.location.search);
                     var game_id = params.get('game_id');
-                        if (game_id != null) {
-                            game_id_text.value = game_id;
-                        }
-
-                        name_text.onkeyup = function () {
-                            join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                    if (game_id != null) {
+                        game_id_text.value = game_id;
                     }
 
-                        password_text.onkeyup = function () {
-                            join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                    name_text.onkeyup = function () {
+                        join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
                     }
-                    </script>
-                </div>
+
+                    password_text.onkeyup = function () {
+                        join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
+                    }
+                </script>
+            </div>
             <div id="newgame" class="tab-pane fade">
                 <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
                         placeholder="Empty=random id" id="new_game_id_text" /></div>
                 <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
-                            id="new_name_text" />
-                    </div>
+                        id="new_name_text" />
+                </div>
                 <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
                         placeholder="for reconnecting" id="new_password_text" /></div>
                 <div><span style="min-width: 150px; display: inline-block;">Word list:</span><select style="width:158px"
@@ -312,486 +312,488 @@
                 </div>
                 <div><span style="min-width: 150px; display: inline-block;">Word count:</span><input type="number"
                         id="word_count" min="2" max="100" value="13">
-                    </div>
+                </div>
                 <button type="button" id="new_game_send" disabled>New Game</button>
 
-                    <script type="text/javascript">
-                        var params = new URLSearchParams(window.location.search);
+                <script type="text/javascript">
+                    var params = new URLSearchParams(window.location.search);
                     var game_id = params.get('game_id');
-                        if (game_id != null) {
-                            new_game_id_text.value = game_id;
-                        }
+                    if (game_id != null) {
+                        new_game_id_text.value = game_id;
+                    }
 
-                        new_name_text.onkeyup = function () {
+                    new_name_text.onkeyup = function () {
                         new_game_send.disabled = new_name_text.value.length == 0 || new_password_text.value.length == 0;
                     }
 
-                        new_password_text.onkeyup = function () {
+                    new_password_text.onkeyup = function () {
                         new_game_send.disabled = new_name_text.value.length == 0 || new_password_text.value.length == 0;
                     }
-                    </script>
-                </div>
+                </script>
             </div>
         </div>
+    </div>
 
 
     <div id="score_container" style="text-align: center; display: none; margin-top: 10px;">
         <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
-                <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px">Score</div>
+            <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px">Score</div>
             <div id='score_span' style="text-align: center;">0</div>
-                </div>
+        </div>
         <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
             <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px;">Words left</div>
             <div id='words_left_span' style="text-align: center;">13</div>
-            </div>
         </div>
+    </div>
 
-        <script type="text/javascript">
-            var sanitizeHTML = function (str) {
+    <script type="text/javascript">
+        var sanitizeHTML = function (str) {
             var temp = document.createElement('div');
-                temp.textContent = str;
-                return temp.innerHTML;
-            };
+            temp.textContent = str;
+            return temp.innerHTML;
+        };
 
-            // pass along the query string
+        // pass along the query string
         var uri = 'wss://' + location.host + '/chat';
         if (location.protocol !== 'https:') {
             uri = 'ws://' + location.host + '/chat';
-            }
+        }
 
-            var ws = new WebSocket(uri);
+        var ws = new WebSocket(uri);
 
-            var player_list = [];
-            var current_player = 0;
-            var guess_player = 0;
-            var decision_player = 1;
-            var reconnecting = false;
+        var player_list = [];
+        var current_player = 0;
+        var guess_player = 0;
+        var decision_player = 1;
+        var reconnecting = false;
 
-            var waiting_animation = '<span class="saving"><span>.</span><span>.</span><span>.</span></span>';
+        var waiting_animation = '<span class="saving"><span>.</span><span>.</span><span>.</span></span>';
 
-            function message(data) {
-                console.log("Incoming raw message", data);
-                var msg = JSON.parse(data);
-                switch (msg.type) {
-                    case "Rejected":
-                        chat.innerText = "Error: " + msg.reason + ".";
+        function message(data) {
+            console.log("Incoming raw message", data);
+            var msg = JSON.parse(data);
+            switch (msg.type) {
+                case "Rejected":
+                    chat.innerText = "Error: " + msg.reason + ".";
                     $(action_div).addClass('has_action');
-                        reconnecting = true;
-                        break;
-                    case "Reconnecting":
-                        $(register_container).hide();
+                    reconnecting = true;
+                    break;
+                case "Reconnecting":
+                    $(register_container).hide();
                     $(action_div).removeClass('has_action');
-                        chat.innerText = "You will be reconnected to the game once it reaches a checkpoint.";
-                        break;
-                    case "WordSubmitted":
-                        // remove the waiting animation
-                        var line = players.childNodes[msg.user];
+                    chat.innerText = "You will be reconnected to the game once it reaches a checkpoint.";
+                    break;
+                case "WordSubmitted":
+                    // remove the waiting animation
+                    var line = players.childNodes[msg.user];
                     var word = document.createElement('div');
                     word.style.display = 'inline';
                     word.innerText = '';
-                        line.replaceChild(word, line.childNodes[1]);
-                        break;
-                    case "Finished":
-                        $(guess_container).hide();
-                        $(accept_container).hide();
-                        $(score_container).hide();
+                    line.replaceChild(word, line.childNodes[1]);
+                    break;
+                case "Finished":
+                    $(guess_container).hide();
+                    $(accept_container).hide();
+                    $(score_container).hide();
                     $(action_div).removeClass('has_action');
-                        chat.innerText = "";
+                    chat.innerText = "";
                     var line = document.createElement('p');
-                        line.innerText = "The game is over! You scored " + msg.points + " points";
-                        chat.appendChild(line);
-                        break;
-                    case "UserAdded":
-                        current_player = msg.id; // set the id of the current client
-                        $(register_container).hide();
+                    line.innerText = "The game is over! You scored " + msg.points + " points";
+                    chat.appendChild(line);
+                    break;
+                case "UserAdded":
+                    current_player = msg.id; // set the id of the current client
+                    $(register_container).hide();
                     $(action_div).removeClass('has_action');
-                        chat.innerText = "Waiting for players to join and for the host to start the game";
+                    chat.innerText = "Waiting for players to join and for the host to start the game";
                     var line = document.createElement('li');
                     line.innerHTML = '<b>' + sanitizeHTML(msg.username) + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>joined</emph></div>';
-                        player_list.push([-100, msg.username.toString(), "", false]);
-                        players.appendChild(line);
+                    player_list.push([-100, msg.username.toString(), "", false]);
+                    players.appendChild(line);
 
                     $(lined).css('height', '+=46px');
 
-                        chat.innerText = "";
+                    chat.innerText = "";
 
-                        if (!reconnecting) {
+                    if (!reconnecting) {
                         var line = document.createElement('p');
                         var link = window.location.origin + '?game_id=' + sanitizeHTML(msg.game_id);
                         line.innerHTML = "Invite friends using game id <b>" + sanitizeHTML(msg.game_id) + '</b> or sharing  <a href=' + link + '>this link</a>!';
-                            chat.appendChild(line);
-                        }
-
-                        if (current_player == 0) {
-                            $(start_container).show();
-                            start_send.disabled = player_list.length < 2;
-                        $(action_div).removeClass('has_action');
-                        } else {
-                            chat.innerText = "Waiting for the host to start the game...";
-                        }
-
-                        break;
-                    case "RoundStart":
-                        guess_player = msg.current_user;
-                        decision_player = msg.decision_user;
-                        $(accept_container).hide();
-                        $(start_container).hide();
-                    $(action_div).removeClass('has_action');
-
-                        score_span.innerText = msg.score.toString();
-                        words_left_span.innerText = msg.words_left.toString();
-                        $(score_container).show();
-
-                        players.innerText = "";
-                        for (var i = 0; i < player_list.length; i++) {
-                        var line = document.createElement('li');
-                            line.id = "li" + i.toString();
-
-                            if (i == guess_player) {
-                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + '*</b>';
-                            } else {
-                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>' + waiting_animation;
-                            }
-
-                            players.appendChild(line);
-                        }
-
-                        if (guess_player == current_player) {
-                            chat.innerText = "";
-                        var line = document.createElement('p');
-                            line.innerText = "You are the player who has to guess the word! Waiting for the hints...";
-                            chat.appendChild(line);
-                        }
-                        break;
-                    case "WordSubmissionRequest":
-                        $(guess_container).hide();
-
-                        chat.innerText = "";
-                    var line = document.createElement('p');
-                        line.innerHTML = "Come up with a hint for <b>" + sanitizeHTML(msg.word) + "</b>";
                         chat.appendChild(line);
-                        $(submit_container).show();
-                    $(action_div).addClass('has_action');
-                        $(text).focus();
-                        break;
-                    case "WordGuessRequest":
-                        chat.innerText = "";
-                        $(guess_container).show();
-                    $(action_div).addClass('has_action');
-                        $(guess_text).focus();
-                        break;
-                    case "AcceptGuessRequest":
-                        chat.innerText = "";
-                        $(accept_container).show();
-                    $(action_div).addClass('has_action');
-                        break;
-                    case "ShowRoundOverview":
-                        chat.innerText = "";
-                        $(guess_container).hide();
+                    }
+
+
+                    if (current_player == 0) {
+                        $(start_container).show();
+                        start_send.disabled = player_list.length < 2;
+                        $(action_div).removeClass('has_action');
+                    } else {
+                        chat.innerText = "Waiting for the host to start the game...";
+                    }
+
+                    break;
+                case "RoundStart":
+                    guess_player = msg.current_user;
+                    decision_player = msg.decision_user;
+                    $(accept_container).hide();
+                    $(start_container).hide();
                     $(action_div).removeClass('has_action');
-                        players.innerText = "";
-                        for (var i = 0; i < msg.overview.length; i++) {
-                            if (msg.overview[i] == null) {
-                                if (i == guess_player) {
+
+                    score_span.innerText = msg.score.toString();
+                    words_left_span.innerText = msg.words_left.toString();
+                    $(score_container).show();
+
+                    players.innerText = "";
+                    for (var i = 0; i < player_list.length; i++) {
+                        var line = document.createElement('li');
+                        line.id = "li" + i.toString();
+
+                        if (i == guess_player) {
+                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + '*</b>';
+                        } else {
+                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>' + waiting_animation;
+                        }
+
+                        players.appendChild(line);
+                    }
+
+                    if (guess_player == current_player) {
+                        chat.innerText = "";
+                        var line = document.createElement('p');
+                        line.innerText = "You are the player who has to guess the word! Waiting for the hints...";
+                        chat.appendChild(line);
+                    }
+                    break;
+                case "WordSubmissionRequest":
+                    $(guess_container).hide();
+
+                    chat.innerText = "";
+                    var line = document.createElement('p');
+                    line.innerHTML = "Come up with a hint for <b>" + sanitizeHTML(msg.word) + "</b>";
+                    chat.appendChild(line);
+                    $(submit_container).show();
+                    $(action_div).addClass('has_action');
+                    $(text).focus();
+                    break;
+                case "WordGuessRequest":
+                    chat.innerText = "";
+                    $(guess_container).show();
+                    $(action_div).addClass('has_action');
+                    $(guess_text).focus();
+                    break;
+                case "AcceptGuessRequest":
+                    chat.innerText = "";
+                    $(accept_container).show();
+                    $(action_div).addClass('has_action');
+                    break;
+                case "ShowRoundOverview":
+                    chat.innerText = "";
+                    $(guess_container).hide();
+                    $(action_div).removeClass('has_action');
+                    players.innerText = "";
+                    for (var i = 0; i < msg.overview.length; i++) {
+                        if (msg.overview[i] == null) {
+                            if (i == guess_player) {
                                 player_list[i][2] = 'PASSED';
-                                } else {
-                                player_list[i][2] = '';
-                                }
-                                player_list[i][3] = false;
                             } else {
-                                player_list[i][2] = msg.overview[i][0].toString();
-                                player_list[i][3] = msg.overview[i][1];
+                                player_list[i][2] = '';
                             }
+                            player_list[i][3] = false;
+                        } else {
+                            player_list[i][2] = msg.overview[i][0].toString();
+                            player_list[i][3] = msg.overview[i][1];
+                        }
 
                         var line = document.createElement('li');
-                            line.id = "li" + i.toString();
+                        line.id = "li" + i.toString();
 
                         line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>';
 
                         var word = document.createElement('div');
                         word.id = 'a' + i.toString();
                         word.style.display = 'inline';
-                            if (player_list[i][3]) {
-                                word.style.textDecoration = "line-through";
-                            }
-                            word.innerText = player_list[i][2];
-
-                            if (i == guess_player) {
-                            word.innerText += '(' + msg.word_to_guess.toString() + ')';
-                            }
-
-                            line.appendChild(word);
-
-                            let index = i;
-                            let w = word;
-                            line.onclick = function () {
-                                if (w.style.textDecoration == "line-through") {
-                                    w.style.textDecoration = "";
-                                    player_list[index][3] = false;
-                                } else {
-                                    w.style.textDecoration = "line-through";
-                                    player_list[index][3] = true;
-                                }
-                                console.log(player_list);
-                            };
-
-                            players.appendChild(line);
+                        if (player_list[i][3]) {
+                            word.style.textDecoration = "line-through";
                         }
-                        break;
-                    case "ShowWords":
-                        //<div style="min-width:20px; display:inline-block;">⌛</div>
-                        chat.innerText = "";
-                        $(submit_container).hide();
+                        word.innerText = player_list[i][2];
+
+                        if (i == guess_player) {
+                            word.innerText += '(' + msg.word_to_guess.toString() + ')';
+                        }
+
+                        line.appendChild(word);
+
+                        let index = i;
+                        let w = word;
+                        line.onclick = function () {
+                            if (w.style.textDecoration == "line-through") {
+                                w.style.textDecoration = "";
+                                player_list[index][3] = false;
+                            } else {
+                                w.style.textDecoration = "line-through";
+                                player_list[index][3] = true;
+                            }
+                            console.log(player_list);
+                        };
+
+                        players.appendChild(line);
+                    }
+                    break;
+                case "ShowWords":
+                    //<div style="min-width:20px; display:inline-block;">⌛</div>
+                    chat.innerText = "";
+                    $(submit_container).hide();
                     $(action_div).removeClass('has_action');
 
-                        players.innerText = "";
-                        for (var i = 0; i < msg.words.length; i++) {
-                            if (msg.words[i] == null) {
+                    players.innerText = "";
+                    for (var i = 0; i < msg.words.length; i++) {
+                        if (msg.words[i] == null) {
                             player_list[i][2] = '';
-                                player_list[i][3] = false;
-                            } else {
-                                player_list[i][2] = msg.words[i][0].toString();
-                                player_list[i][3] = msg.words[i][1];
-                            }
+                            player_list[i][3] = false;
+                        } else {
+                            player_list[i][2] = msg.words[i][0].toString();
+                            player_list[i][3] = msg.words[i][1];
+                        }
 
                         var line = document.createElement('li');
-                            line.id = "li" + i.toString();
+                        line.id = "li" + i.toString();
                         var player_name = document.createElement('b');
 
 
-                            if (i == guess_player) {
+                        if (i == guess_player) {
                             player_name.innerText = player_list[i][1] + '*';
-                            } else {
+                        } else {
                             player_name.innerText = player_list[i][1] + ' - ';
-                            }
-                            line.appendChild(player_name);
+                        }
+                        line.appendChild(player_name);
 
                         var word = document.createElement('div');
                         word.id = 'a' + i.toString();
                         word.style.display = 'inline';
-                            if (player_list[i][3]) {
-                                word.style.textDecoration = "line-through";
-                            }
-                            word.innerText = player_list[i][2];
-                            line.appendChild(word);
+                        if (player_list[i][3]) {
+                            word.style.textDecoration = "line-through";
+                        }
+                        word.innerText = player_list[i][2];
+                        line.appendChild(word);
 
-                            if (i == decision_player && decision_player != current_player) {
+                        if (i == decision_player && decision_player != current_player) {
                             var waiting = document.createElement('div');
                             waiting.style.display = 'inline';
-                                waiting.innerHTML = " " + waiting_animation; //"⌛";
-                                line.appendChild(waiting);
-                            }
-
-                            let index = i;
-                            let w = word;
-                            line.onclick = function () {
-                                if (w.style.textDecoration == "line-through") {
-                                    w.style.textDecoration = "";
-                                    player_list[index][3] = false;
-                                } else {
-                                    w.style.textDecoration = "line-through";
-                                    player_list[index][3] = true;
-                                }
-                                console.log(player_list);
-                            };
-
-                            players.appendChild(line);
+                            waiting.innerHTML = " " + waiting_animation; //"⌛";
+                            line.appendChild(waiting);
                         }
-                        break;
-                    case "ShowFilteredWords":
-                        chat.innerText = "";
-                        $(filter_container).hide();
-                    $(action_div).removeClass('has_action');
-                        players.innerText = "";
-                        for (var i = 0; i < msg.words.length; i++) {
-                            if (msg.words[i] == null) {
-                                if (i != current_player && i == guess_player) {
-                                    player_list[i][2] = waiting_animation;
-                                } else {
-                                player_list[i][2] = '';
-                                }
+
+                        let index = i;
+                        let w = word;
+                        line.onclick = function () {
+                            if (w.style.textDecoration == "line-through") {
+                                w.style.textDecoration = "";
+                                player_list[index][3] = false;
                             } else {
-                                player_list[i][2] = sanitizeHTML(msg.words[i].toString());
+                                w.style.textDecoration = "line-through";
+                                player_list[index][3] = true;
                             }
-                            player_list[i][3] = false;
+                            console.log(player_list);
+                        };
+
+                        players.appendChild(line);
+                    }
+                    break;
+                case "ShowFilteredWords":
+                    chat.innerText = "";
+                    $(filter_container).hide();
+                    $(action_div).removeClass('has_action');
+                    players.innerText = "";
+                    for (var i = 0; i < msg.words.length; i++) {
+                        if (msg.words[i] == null) {
+                            if (i != current_player && i == guess_player) {
+                                player_list[i][2] = waiting_animation;
+                            } else {
+                                player_list[i][2] = '';
+                            }
+                        } else {
+                            player_list[i][2] = sanitizeHTML(msg.words[i].toString());
+                        }
+                        player_list[i][3] = false;
 
                         var line = document.createElement('li');
-                            line.id = "li" + i.toString();
+                        line.id = "li" + i.toString();
                         var player_name = document.createElement('b');
                         player_name.innerText = player_list[i][1] + ' - ';
-                            line.appendChild(player_name);
+                        line.appendChild(player_name);
 
                         var word = document.createElement('div');
                         word.id = 'a' + i.toString();
                         word.style.display = 'inline';
-                            word.innerHTML = player_list[i][2];
-                            line.appendChild(word);
-                            players.appendChild(line);
-                        }
-                        break;
-                    case "ManualDuplicateEliminationRequest":
-                        chat.innerText = "";
+                        word.innerHTML = player_list[i][2];
+                        line.appendChild(word);
+                        players.appendChild(line);
+                    }
+                    break;
+                case "ManualDuplicateEliminationRequest":
+                    chat.innerText = "";
                     var line = document.createElement('p');
-                        line.innerText = "Strike out all duplicate words by clicking on them and then submit.";
-                        chat.appendChild(line);
-                        $(filter_container).show();
+                    line.innerText = "Strike out all duplicate words by clicking on them and then submit.";
+                    chat.appendChild(line);
+                    $(filter_container).show();
                     $(action_div).addClass('has_action');
-                        break;
-                    default:
+                    break;
+                default:
                     var line = document.createElement('p');
-                        line.innerText = "Unknown message: " + data;
-                        chat.appendChild(line);
-                        console.log("Unknown message", msg);
-                        break;
-                }
+                    line.innerText = "Unknown message: " + data;
+                    chat.appendChild(line);
+                    console.log("Unknown message", msg);
+                    break;
             }
-            ws.onopen = function () {
-                chat.innerText = "";
         }
-            ws.onmessage = function (msg) {
-                console.log(msg);
-                message(msg.data);
-            };
-            ws.onclose = function (event) {
-                if (event.wasClean) {
-                    console.log(`[close] Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
-                } else {
-                    console.log(`[close] Connection died: code=${event.code}, reason=${event.reason}`);
-                }
+        ws.onopen = function () {
+            chat.innerText = "";
+        }
+        ws.onmessage = function (msg) {
+            console.log(msg);
+            message(msg.data);
+        };
+        ws.onclose = function (event) {
+            if (event.wasClean) {
+                console.log(`[close] Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+            } else {
+                console.log(`[close] Connection died: code=${event.code}, reason=${event.reason}`);
+            }
 
-                // create error pop-up
+            // create error pop-up
             var openModalInside = document.createElement('div');
-                openModalInside.innerText = "The connection to the server was lost. Please refresh the page.";
+            openModalInside.innerText = "The connection to the server was lost. Please refresh the page.";
             var openModal = document.createElement('div');
-                openModal.id = "openModal";
-                openModal.className = "modalDialog";
-                openModal.appendChild(openModalInside);
+            openModal.id = "openModal";
+            openModal.className = "modalDialog";
+            openModal.appendChild(openModalInside);
             document.getElementsByTagName('body')[0].appendChild(openModal);
-            };
-            ws.onerror = function (error) {
-                console.log(`[error] ${error.message}`);
+        };
+        ws.onerror = function (error) {
+            console.log(`[error] ${error.message}`);
+        };
+
+        send.onclick = function () {
+            var msg = {
+                type: "WordSubmission",
+                word: text.value,
             };
 
-            send.onclick = function () {
-                var msg = {
-                    type: "WordSubmission",
-                    word: text.value,
-                };
-
-                var line = players.childNodes[current_player];
+            var line = players.childNodes[current_player];
             var word = document.createElement('div');
             word.style.display = 'inline';
             word.innerHTML = '<b>' + text.value + '</b>';
-                line.replaceChild(word, line.childNodes[1]);
+            line.replaceChild(word, line.childNodes[1]);
 
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
+            ws.send(JSON.stringify(msg));
             text.value = '';
+        };
+
+        guess_send.onclick = function () {
+            var msg = {
+                type: "WordGuess",
+                word: guess_text.value,
             };
 
-            guess_send.onclick = function () {
-                var msg = {
-                    type: "WordGuess",
-                    word: guess_text.value,
-                };
-
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
+            ws.send(JSON.stringify(msg));
             guess_text.value = '';
+        };
+
+        pass_send.onclick = function () {
+            var msg = {
+                type: "WordGuess",
+                word: "",
             };
 
-            pass_send.onclick = function () {
-                var msg = {
-                    type: "WordGuess",
-                    word: "",
-                };
-
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
+            ws.send(JSON.stringify(msg));
             guess_text.value = '';
-            };
+        };
 
-            accept_send.onclick = function () {
-                var msg = {
-                    type: "AcceptGuess",
-                    accept: true,
-                };
+        accept_send.onclick = function () {
+            var msg = {
+                type: "AcceptGuess",
+                accept: true,
+            };
 
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
-            };
+            ws.send(JSON.stringify(msg));
+        };
 
-            reject_send.onclick = function () {
-                var msg = {
-                    type: "AcceptGuess",
-                    accept: false,
-                };
+        reject_send.onclick = function () {
+            var msg = {
+                type: "AcceptGuess",
+                accept: false,
+            };
 
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
-            };
+            ws.send(JSON.stringify(msg));
+        };
 
-            filter_send.onclick = function () {
+        filter_send.onclick = function () {
             var filter_ids = []
-                for (var i = 0; i < player_list.length; i++) {
-                    if (player_list[i][3]) {
-                        filter_ids.push(i);
-                    }
+            for (var i = 0; i < player_list.length; i++) {
+                if (player_list[i][3]) {
+                    filter_ids.push(i);
                 }
+            }
 
-                var msg = {
-                    type: "ManualDuplicateElimination",
-                    ids: filter_ids,
-                };
-
-            console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
+            var msg = {
+                type: "ManualDuplicateElimination",
+                ids: filter_ids,
             };
 
-            start_send.onclick = function () {
-                var msg = {
-                    type: "StartGame",
-                };
-
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
+            ws.send(JSON.stringify(msg));
+        };
+
+        start_send.onclick = function () {
+            var msg = {
+                type: "StartGame",
             };
 
-            join_game_send.onclick = function () {
-                var msg = {
-                    type: "JoinGame",
-                    name: name_text.value,
-                    password: password_text.value,
-                    game_id: game_id_text.value,
-                };
-
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
+            ws.send(JSON.stringify(msg));
+        };
+
+        join_game_send.onclick = function () {
+            var msg = {
+                type: "JoinGame",
+                name: name_text.value,
+                password: password_text.value,
+                game_id: game_id_text.value,
             };
 
-            new_game_send.onclick = function () {
-                var msg = {
-                    type: "NewGame",
-                    name: new_name_text.value,
-                    password: new_password_text.value,
-                    game_id: new_game_id_text.value,
-                    word_list: word_list_select.value,
-                    word_count: parseInt(word_count.value),
-                };
+            console.log(JSON.stringify(msg))
+            ws.send(JSON.stringify(msg));
+        };
+
+        new_game_send.onclick = function () {
+            var msg = {
+                type: "NewGame",
+                name: new_name_text.value,
+                password: new_password_text.value,
+                game_id: new_game_id_text.value,
+                word_list: word_list_select.value,
+                word_count: parseInt(word_count.value),
+            };
 
             console.log(JSON.stringify(msg))
-                ws.send(JSON.stringify(msg));
-            };
-        </script>
+            ws.send(JSON.stringify(msg));
+        };
+    </script>
 
-        <div>
-            <h3>User comments</h3>
-            <blockquote>"I'm going to pick the third-most obvious one" - Andreas</blockquote>
+    <div>
+        <h3>User comments</h3>
+        <blockquote>"I'm going to pick the third-most obvious one" - Andreas</blockquote>
 
         <blockquote>"I have an obscure hint: how much do you know about Polynesian agricultural societies?" - Ben
-            </blockquote>
-            <blockquote>"Your hint is 'numan'?! What does that even mean?" - Sandra</blockquote>
-            <blockquote>"Two clues left? Only a real chicken would pass" - Michael</blockquote>
-        </div>
-    </body>
+        </blockquote>
+        <blockquote>"Your hint is 'numan'?! What does that even mean?" - Sandra</blockquote>
+        <blockquote>"Two clues left? Only a real chicken would pass" - Michael</blockquote>
+    </div>
+</body>
+
 </html>
