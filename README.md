@@ -16,6 +16,21 @@ Screenshots
 <img src="include/justone_gameplay2.png" alt="Gameplay" width="400"/>
 
 
+Hosting
+-------
+The game runs as a [Cloudflare Worker](https://developers.cloudflare.com/workers/) and fits in the free plan.
+The page in `public/` is served as static assets, and each game is a Durable Object that holds the
+players' WebSockets and stores the game state. Games are removed when they finish or after 90 minutes
+without activity.
+
+Requirements: Rust with the `wasm32-unknown-unknown` target (`rustup target add wasm32-unknown-unknown`) and Node.js.
+
+    npx wrangler dev      # run locally on http://localhost:8787
+    npx wrangler deploy   # deploy to your Cloudflare account
+
 Development
 -----------
+The game logic is in `src/game.rs` (test it with `cargo test`), and the Worker and Durable Object are in `src/worker_app.rs`.
+Word lists are in `include/words_*.txt` and are compiled into the Worker.
+
 Any suggestions, word lists, and patches are welcome!

@@ -1,0 +1,19 @@
+name = "justone"
+main = "build/index.js"
+compatibility_date = "2026-10-01"
+
+[build]
+command = "cargo install -q worker-build@^0.9 && worker-build --release"
+
+# index.html and the favicons are served directly; only /chat reaches the Worker
+[assets]
+directory = "public"
+
+[[durable_objects.bindings]]
+name = "GAMES"
+class_name = "GameRoom"
+
+# SQLite-backed Durable Objects are available on the Workers free plan
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]

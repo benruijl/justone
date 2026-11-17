@@ -355,13 +355,38 @@
             return temp.innerHTML;
         };
 
-        // pass along the query string
-        var uri = 'wss://' + location.host + '/chat';
-        if (location.protocol !== 'https:') {
-            uri = 'ws://' + location.host + '/chat';
-        }
+        var ws = null;
+        var ping_timer = null;
 
-        var ws = new WebSocket(uri);
+        // connect to the server for a game and send the first message once connected
+        function connect(game_id, first_msg) {
+            if (ws !== null) {
+                // drop a previous (rejected) connection without showing the error pop-up
+                ws.onclose = null;
+                ws.close();
+            }
+            clearInterval(ping_timer);
+
+            var scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            ws = new WebSocket(scheme + location.host + '/chat?game_id=' + encodeURIComponent(game_id.trim()));
+            ws.onopen = function () {
+                chat.innerText = "";
+                ws.send(JSON.stringify(first_msg));
+                // keep the connection alive; answered by the server without waking the game
+                ping_timer = setInterval(function () { ws.send("ping"); }, 30000);
+            };
+            ws.onmessage = function (msg) {
+                if (msg.data === "pong") {
+                    return;
+                }
+                console.log(msg);
+                message(msg.data);
+            };
+            ws.onclose = onclose;
+            ws.onerror = function (error) {
+                console.log(`[error] ${error.message}`);
+            };
+        }
 
         var player_list = [];
         var current_player = 0;
@@ -648,14 +673,8 @@
                     break;
             }
         }
-        ws.onopen = function () {
-            chat.innerText = "";
-        }
-        ws.onmessage = function (msg) {
-            console.log(msg);
-            message(msg.data);
-        };
-        ws.onclose = function (event) {
+        function onclose(event) {
+            clearInterval(ping_timer);
             if (event.wasClean) {
                 console.log(`[close] Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
             } else {
@@ -670,10 +689,7 @@
             openModal.className = "modalDialog";
             openModal.appendChild(openModalInside);
             document.getElementsByTagName('body')[0].appendChild(openModal);
-        };
-        ws.onerror = function (error) {
-            console.log(`[error] ${error.message}`);
-        };
+        }
 
         send.onclick = function () {
             var msg = {
@@ -769,7 +785,7 @@
             };
 
             console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
+            connect(msg.game_id, msg);
         };
 
         new_game_send.onclick = function () {
@@ -783,7 +799,7 @@
             };
 
             console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
+            connect(msg.game_id, msg);
         };
     </script>
 
