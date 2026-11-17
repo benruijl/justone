@@ -1126,7 +1126,7 @@
             <div class="table" id="table"></div>
         </section>
 
-        <section class="quotes">
+        <section class="quotes" id="quotes">
             <h3>Overheard at the table</h3>
             <div class="bubbles">
                 <blockquote class="bubble">I'm going to pick the third-most obvious one.<cite>Andreas</cite></blockquote>
@@ -1402,6 +1402,7 @@
 
         function showGame() {
             $('intro').hidden = true;
+            $('quotes').hidden = true;
             $('lobby').hidden = true;
             $('game').hidden = false;
             $('game_chip').hidden = false;
