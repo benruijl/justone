@@ -5,10 +5,14 @@ A web version of the board game [Just One](https://www.boardgamegeek.com/boardga
 
 Playing
 -------
-To play the game online, you can host a server yourself or go to https://justone.hoist.workers.dev/.
+<p align="center">
+  <a href="https://justone.hoist.workers.dev/"><img src="include/play-button.png" alt="Play now" width="305"/></a>
+</p>
 
-Everyone plays on their own phone or computer: one player starts a game and shares the link, the
-others join with a name and a password. If your phone locks or your connection drops, the game
+Give a one-word hint to help a teammate guess the secret word, but identical hints cancel out!
+One player starts a game and shares the link, the others join with a name and a password.
+Everyone plays on their own phone or computer, in the same room or on a video call. It's free and
+there is nothing to install or sign up for. If your phone locks or the connection drops, the game
 reconnects you automatically.
 
 Screenshots

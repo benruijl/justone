@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://justone.hoist.workers.dev/sitemap.xml

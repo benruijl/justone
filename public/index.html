@@ -4,7 +4,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Just One</title>
+    <title>Just One: the word-guessing party game, online with friends</title>
+    <meta name="description" content="Play the cooperative word-guessing party game online with friends. Give one-word hints to help a teammate guess the secret word, but identical hints cancel out. Free, no sign-up, everyone plays on their own phone.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://justone.hoist.workers.dev/">
+    <meta property="og:title" content="Just One: the word-guessing party game, online with friends">
+    <meta property="og:description" content="Give one-word hints to help a teammate guess the secret word, but identical hints cancel out. Free, no sign-up.">
+    <meta property="og:image" content="https://justone.hoist.workers.dev/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Just One: the word-guessing party game, online with friends">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -273,6 +283,20 @@
         }
 
         /* ---------- lobby ---------- */
+
+        .intro {
+            margin: -4px 0 22px;
+            max-width: 620px;
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        .intro em {
+            font-style: normal;
+            background: var(--sun);
+            padding: 0 4px;
+            border-radius: 4px;
+        }
 
         .lobby {
             padding: 22px;
@@ -1035,6 +1059,12 @@
     <div class="banner" id="banner" role="status" hidden></div>
 
     <main>
+        <p class="intro" id="intro">
+            Give a one-word hint to help a teammate guess the secret word. The catch: identical hints
+            cancel out, so be clever, but not <em>too</em> clever. Start a game, share the link, and
+            everyone plays on their own phone.
+        </p>
+
         <!-- joining or creating a game -->
         <section id="lobby" class="card lobby">
             <div class="tabs" role="tablist">
@@ -1371,6 +1401,7 @@
         };
 
         function showGame() {
+            $('intro').hidden = true;
             $('lobby').hidden = true;
             $('game').hidden = false;
             $('game_chip').hidden = false;
