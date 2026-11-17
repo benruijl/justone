@@ -11,10 +11,8 @@ To play the game online, you can host a server yourself or go to https://justone
 
 Screenshots
 -----------
-<img src="include/justone_gameplay.png" alt="Gameplay" width="400"/>
-<br/>
-<img src="include/justone_gameplay2.png" alt="Gameplay" width="400"/>
-
+<img src="include/justone_gameplay.png" alt="The judge crossing out duplicate hints, with the result of the last round above" width="520"/>
+<img src="include/justone_gameplay2.png" alt="The guesser's view on a phone" width="240"/>
 
 Hosting
 -------
