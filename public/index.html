@@ -7,6 +7,8 @@
     <title>Just One</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#fff4df">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Baloo+2:wght@500;600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
@@ -39,6 +41,7 @@
         body {
             margin: 0;
             min-height: 100vh;
+            overflow-x: clip;
             color: var(--ink);
             background-color: var(--paper);
             background-image: radial-gradient(var(--dots) 1.4px, transparent 1.4px);
@@ -103,6 +106,8 @@
 
         .game-chip {
             display: inline-flex;
+            flex-wrap: wrap;
+            max-width: 100%;
             align-items: center;
             gap: 8px;
             padding: 4px 6px 4px 14px;
@@ -114,6 +119,8 @@
         }
 
         .game-chip code {
+            overflow-wrap: anywhere;
+            min-width: 0;
             font-family: 'Patrick Hand', cursive;
             font-size: 22px;
         }
@@ -143,9 +150,26 @@
             white-space: nowrap;
         }
 
-        button:hover:not(:disabled) {
-            transform: translate(-1px, -1px);
-            box-shadow: 4px 4px 0 var(--ink);
+        /* hover effects only with a mouse: on touch screens they stick after a tap */
+        @media (hover: hover) {
+            button:hover:not(:disabled) {
+                transform: translate(-1px, -1px);
+                box-shadow: 4px 4px 0 var(--ink);
+            }
+
+            .tabs button:hover:not([aria-selected="true"]) {
+                transform: none;
+                box-shadow: none;
+                background: #ffe7b0;
+            }
+
+            .easel.pickable:hover {
+                transform: rotate(0deg) translateY(-4px);
+            }
+
+            .easel.pickable.locked:hover {
+                transform: rotate(var(--tilt, -1.5deg));
+            }
         }
 
         button:active:not(:disabled) {
@@ -273,17 +297,13 @@
 
         .tabs button {
             flex: 1;
+            white-space: normal;
+            line-height: 1.15;
             border: none;
             box-shadow: none;
             background: transparent;
             border-radius: 11px;
             padding: 6px 10px 4px;
-        }
-
-        .tabs button:hover:not(:disabled) {
-            transform: none;
-            box-shadow: none;
-            background: #ffe7b0;
         }
 
         .tabs button[aria-selected="true"] {
@@ -383,6 +403,7 @@
         /* ---------- prompt (what to do now) ---------- */
 
         .prompt {
+            overflow-x: clip;
             position: relative;
             padding: 20px 22px;
             margin-bottom: 22px;
@@ -445,6 +466,8 @@
             font-family: 'Patrick Hand', cursive;
             font-size: 40px;
             line-height: 1.1;
+            max-width: 100%;
+            overflow-wrap: anywhere;
             transform: rotate(-2deg);
         }
 
@@ -676,16 +699,8 @@
             cursor: pointer;
         }
 
-        .easel.pickable:hover {
-            transform: rotate(0deg) translateY(-4px);
-        }
-
         .easel.pickable.locked {
             cursor: default;
-        }
-
-        .easel.pickable.locked:hover {
-            transform: rotate(var(--tilt, -1.5deg));
         }
 
         .easel.joined .board {
@@ -702,8 +717,9 @@
         /* ---------- last round ---------- */
 
         .last-round {
+            overflow-x: clip; /* the stamp animation starts large */
             display: grid;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: minmax(0, 1fr) auto;
             gap: 4px 16px;
             align-items: center;
             padding: 14px 18px;
@@ -738,6 +754,8 @@
         }
 
         .chip {
+            max-width: 100%;
+            overflow-wrap: anywhere;
             padding: 0 10px;
             background: var(--paper);
             border: 2px solid var(--ink);
@@ -879,6 +897,23 @@
             }
         }
 
+        /* ---------- reconnecting ---------- */
+
+        .banner {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            z-index: 9;
+            transform: translateX(-50%);
+            padding: 4px 16px 2px;
+            background: var(--ink);
+            color: var(--paper);
+            border-radius: 999px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 3px 3px 0 var(--tomato);
+        }
+
         /* ---------- connection lost ---------- */
 
         .overlay {
@@ -906,6 +941,51 @@
         @media (max-width: 520px) {
             body {
                 font-size: 17px;
+            }
+
+            header {
+                padding: 16px 16px 14px;
+            }
+
+            .lobby,
+            .prompt {
+                padding: 16px;
+            }
+
+            .tabs {
+                margin-bottom: 14px;
+            }
+
+            .tabs button {
+                font-size: 16px;
+                padding: 6px 6px 4px;
+            }
+
+            .prompt .big {
+                font-size: 20px;
+            }
+
+            .last-round {
+                padding: 12px 14px;
+            }
+
+            .last-round .word {
+                font-size: 28px;
+                overflow-wrap: anywhere;
+            }
+
+            .finale .points {
+                font-size: 52px;
+                max-width: 100%;
+            }
+
+            .last-round .word {
+                grid-column: 1 / -1;
+            }
+
+            .stamp {
+                grid-row: 1;
+                justify-self: end;
             }
 
             .logo {
@@ -952,6 +1032,8 @@
         </div>
     </header>
 
+    <div class="banner" id="banner" role="status" hidden></div>
+
     <main>
         <!-- joining or creating a game -->
         <section id="lobby" class="card lobby">
@@ -982,7 +1064,7 @@
                 <label for="new_password">Password</label>
                 <input id="new_password" name="password" placeholder="anything" data-label="a password" autocomplete="off">
                 <span class="hint muted">Use the same name and password to get back into a game.</span>
-                <label for="new_word_list">Words</label>
+                <label for="new_word_list">Language</label>
                 <select id="new_word_list" name="word_list">
                     <option value="dutch">Dutch</option>
                     <option value="english" selected>English</option>
@@ -991,7 +1073,7 @@
                     <option value="hungarian">Hungarian</option>
                     <option value="italian">Italian</option>
                 </select>
-                <label for="new_word_count">Cards</label>
+                <label for="new_word_count">Words</label>
                 <input id="new_word_count" name="word_count" type="number" min="1" max="100" value="13">
                 <div class="actions">
                     <button type="submit" class="go">Create game</button>
@@ -1004,7 +1086,7 @@
         <section id="game" hidden>
             <div class="status" id="status" hidden>
                 <div class="stat score">⭐ Score <b id="score">0</b></div>
-                <div class="stat">🃏 Cards left <b id="words_left">13</b></div>
+                <div class="stat">💬 Words left <b id="words_left">13</b></div>
             </div>
 
             <div class="card prompt" id="prompt"></div>
@@ -1064,6 +1146,8 @@
             word: '',
             guess: null,
             myHint: null,
+            hintFor: null, // the word our last hint was for, to show it again after reconnecting
+            lastHint: null,
             last: null,
         };
 
@@ -1081,40 +1165,122 @@
             }
         }
 
-        // connect to the server for a game and send the first message once connected
-        function connect(gameId, firstMsg, errorEl) {
+        // connect to the server for a game and send the first message once connected;
+        // `onReject` and `onStatus` report problems and progress to the user
+        function connect(gameId, firstMsg, onReject, onStatus) {
             if (ws !== null) {
-                // drop a previous (rejected) connection without showing the error pop-up
+                // drop a previous connection without triggering a reconnect
                 ws.onclose = null;
                 ws.close();
             }
             clearInterval(pingTimer);
-            errorEl.replaceChildren('Connecting', dots());
+            onStatus();
 
             const scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
-            ws = new WebSocket(scheme + location.host + '/chat?game_id=' + encodeURIComponent(gameId.trim()));
-            ws.onopen = () => {
-                ws.send(JSON.stringify(firstMsg));
+            const socket = new WebSocket(scheme + location.host + '/chat?game_id=' + encodeURIComponent(gameId.trim()));
+            ws = socket;
+            socket.onopen = () => {
+                socket.send(JSON.stringify(firstMsg));
                 // keep the connection alive; answered by the server without waking the game
-                pingTimer = setInterval(() => ws.send('ping'), 30000);
+                pingTimer = setInterval(() => socket.readyState === WebSocket.OPEN && socket.send('ping'), 30000);
             };
-            ws.onmessage = (e) => {
+            socket.onmessage = (e) => {
                 if (e.data === 'pong') return;
-                handle(JSON.parse(e.data), errorEl);
+                handle(JSON.parse(e.data), onReject);
             };
-            ws.onclose = connectionLost;
+            socket.onclose = connectionClosed;
         }
 
-        function connectionLost() {
-            clearInterval(pingTimer);
-            document.body.append(el('div', { class: 'overlay' },
-                el('div', { class: 'card' },
-                    el('h2', {}, 'Oops, we lost the connection'),
-                    el('p', {}, S.me === null
-                        ? 'Reload the page to try again.'
-                        : 'Reload the page and join with the same name and password to get back in.'),
-                    el('button', { type: 'button', onclick: () => location.reload() }, 'Reload'))));
+        // ---------- reconnecting ----------
+        // Phones drop the connection when the screen locks or the browser goes to the background,
+        // so a player who is in a game rejoins automatically with the same name and password.
+
+        let creds = null; // {gameId, name, password} once in a game
+        let pendingCreds = null;
+        let retries = 0;
+        let retryTimer = null;
+
+        function setBanner(text) {
+            const b = $('banner');
+            b.hidden = !text;
+            if (text) b.replaceChildren(text, ' ', dots());
         }
+
+        function showOverlay(title, text, buttonLabel, action) {
+            hideOverlay();
+            document.body.append(el('div', { class: 'overlay', id: 'overlay' },
+                el('div', { class: 'card' },
+                    el('h2', {}, title),
+                    el('p', {}, text),
+                    el('button', { type: 'button', onclick: action }, buttonLabel))));
+        }
+
+        function hideOverlay() {
+            const o = $('overlay');
+            if (o) o.remove();
+        }
+
+        function reconnect() {
+            clearTimeout(retryTimer);
+            retryTimer = null;
+            if (!creds) return;
+            connect(creds.gameId, { type: 'JoinGame', game_id: creds.gameId, name: creds.name, password: creds.password },
+                (reason) => {
+                    // the game is gone (finished or expired) or the password no longer matches
+                    setBanner(null);
+                    creds = null;
+                    showOverlay('This game has ended', 'Sorry, ' + reason + '.', 'Back to the start', () => (location.href = '/'));
+                },
+                () => setBanner('Reconnecting'));
+        }
+
+        function connectionClosed(event) {
+            clearInterval(pingTimer);
+            if (!creds) {
+                // not in a game yet
+                $('join_error').textContent = $('new_error').textContent = '';
+                showOverlay('Oops, we lost the connection', 'Please try again.', 'Reload', () => location.reload());
+                return;
+            }
+            if (S.phase === 'finished') return; // the game has been removed from the server
+            if (event.reason === 'reconnected elsewhere') {
+                showOverlay('You joined from somewhere else',
+                    'You are playing as ' + creds.name + ' in another tab or on another device.',
+                    'Play here instead', () => { hideOverlay(); retries = 0; reconnect(); });
+                return;
+            }
+            if (event.reason === 'game expired') {
+                creds = null;
+                showOverlay('This game has expired', 'Games end after 90 minutes without activity.', 'Back to the start', () => (location.href = '/'));
+                return;
+            }
+            scheduleReconnect();
+        }
+
+        function scheduleReconnect() {
+            if (retryTimer !== null) return;
+            setBanner('Connection lost, reconnecting');
+            if (retries >= 8) {
+                setBanner(null);
+                showOverlay('Can\'t reach the game', 'Check your internet connection and try again.', 'Try again', () => { hideOverlay(); retries = 0; reconnect(); });
+                return;
+            }
+            const delay = Math.min(500 * 2 ** retries, 10000);
+            retries++;
+            retryTimer = setTimeout(reconnect, delay);
+        }
+
+        // reconnect at once when the player comes back to the page
+        function wakeUp() {
+            if (document.visibilityState === 'visible' && creds && S.phase !== 'finished' && !$('overlay')
+                && (ws === null || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING)) {
+                retries = 0;
+                reconnect();
+            }
+        }
+        document.addEventListener('visibilitychange', wakeUp);
+        window.addEventListener('online', wakeUp);
+        window.addEventListener('pageshow', wakeUp);
 
         // ---------- lobby ----------
 
@@ -1148,12 +1314,13 @@
             const err = $('join_error');
             if (missing([$('join_game_id'), $('join_name'), $('join_password')], err)) return;
             remember($('join_name').value.trim(), $('join_password').value);
+            pendingCreds = { name: $('join_name').value.trim(), password: $('join_password').value };
             connect($('join_game_id').value, {
                 type: 'JoinGame',
                 game_id: $('join_game_id').value.trim(),
                 name: $('join_name').value.trim(),
                 password: $('join_password').value,
-            }, err);
+            }, (reason) => (err.textContent = 'Sorry, ' + reason + '.'), () => err.replaceChildren('Connecting', dots()));
         };
 
         $('new_form').onsubmit = (e) => {
@@ -1161,6 +1328,7 @@
             const err = $('new_error');
             if (missing([$('new_name'), $('new_password')], err)) return;
             remember($('new_name').value.trim(), $('new_password').value);
+            pendingCreds = { name: $('new_name').value.trim(), password: $('new_password').value };
             connect($('new_game_id').value, {
                 type: 'NewGame',
                 game_id: $('new_game_id').value.trim(),
@@ -1168,7 +1336,7 @@
                 password: $('new_password').value,
                 word_list: $('new_word_list').value,
                 word_count: parseInt($('new_word_count').value, 10) || 13,
-            }, err);
+            }, (reason) => (err.textContent = 'Sorry, ' + reason + '.'), () => err.replaceChildren('Connecting', dots()));
         };
 
         (function initLobby() {
@@ -1216,7 +1384,8 @@
             p.classList.toggle('your-turn', yourTurn);
             p.replaceChildren(...children);
             const input = p.querySelector('input');
-            if (input) input.focus();
+            if (input) input.focus({ preventScroll: true });
+            if (yourTurn && p.getBoundingClientRect().top < 0) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function setNumber(id, value) {
@@ -1287,7 +1456,7 @@
 
         const OUTCOME = {
             correct: ['Got it!', (g, w) => [name(g) + ' guessed it.']],
-            wrong: ['Missed', (g, w, guess) => [name(g) + ' guessed “', el('b', {}, guess), '”, which cost an extra card.']],
+            wrong: ['Missed', (g, w, guess) => [name(g) + ' guessed “', el('b', {}, guess), '”, which cost an extra word.']],
             passed: ['Passed', (g) => [name(g) + ' passed. 🐔']],
         };
 
@@ -1357,11 +1526,12 @@
                 if (!word) return input.focus();
                 send({ type: 'WordSubmission', word });
                 S.myHint = word;
+                S.hintFor = S.word;
                 S.hints[S.me].status = 'ready';
                 waitingPrompt('Hint locked in! Waiting for the others');
                 renderTable();
             };
-            input.onkeydown = (e) => e.key === 'Enter' && submit();
+            input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
             setPrompt(true,
                 el('p', {}, 'Help ', el('b', {}, name(S.guesser)), ' guess this word:'),
                 el('div', { class: 'word-card' }, S.word),
@@ -1377,17 +1547,17 @@
                 send({ type: 'WordGuess', word });
                 waitingPrompt('Fingers crossed');
             };
-            input.onkeydown = (e) => e.key === 'Enter' && guess();
+            input.onkeydown = (e) => { if (e.key === 'Enter') guess(); };
             setPrompt(true,
                 el('p', { class: 'big' }, 'What\'s the word? Look at the hints below.'),
                 el('div', { class: 'row' },
                     input,
                     el('button', { type: 'button', class: 'go', onclick: guess }, 'Guess'),
                     el('button', {
-                        type: 'button', class: 'plain', title: 'Skipping costs one card; a wrong guess costs two',
+                        type: 'button', class: 'plain', title: 'Passing costs one word; a wrong guess costs two',
                         onclick: () => { send({ type: 'WordGuess', word: '' }); waitingPrompt('Chicken mode engaged'); }
                     }, 'Pass 🐔')),
-                el('p', { class: 'muted' }, 'A wrong guess costs two cards; passing costs one.'));
+                el('p', { class: 'muted' }, 'A wrong guess costs two words; passing costs one.'));
         }
 
         function judgePrompt() {
@@ -1419,7 +1589,7 @@
                                 ratio >= 0.2 ? 'Room for improvement. Maybe try less obscure hints?' :
                                     'Ouch. Did everyone write the same hint?';
             setPrompt(false, el('div', { class: 'finale' },
-                el('p', { class: 'big' }, 'That\'s the last card!'),
+                el('p', { class: 'big' }, 'That\'s the last word!'),
                 el('div', { class: 'points' }, points, el('small', {}, ' / ' + total)),
                 el('p', { class: 'big' }, verdict),
                 el('button', {
@@ -1430,14 +1600,17 @@
 
         // ---------- server messages ----------
 
-        function handle(msg, errorEl) {
+        function handle(msg, onReject) {
             switch (msg.type) {
                 case 'Rejected':
-                    errorEl.textContent = 'Sorry, ' + msg.reason + '.';
+                    onReject(msg.reason);
                     break;
 
                 case 'Reconnecting':
                     // the server sends the whole game state again
+                    retries = 0;
+                    setBanner(null);
+                    hideOverlay();
                     S.players = [];
                     S.hints = [];
                     S.phase = 'waiting';
@@ -1447,6 +1620,10 @@
                 case 'UserAdded':
                     S.me = msg.id;
                     S.gameId = msg.game_id;
+                    if (pendingCreds) {
+                        creds = { gameId: msg.game_id, ...pendingCreds };
+                        pendingCreds = null;
+                    }
                     S.players.push(msg.username);
                     S.hints.push(blankHint());
                     if (S.phase === 'lobby') S.phase = 'waiting';
@@ -1463,6 +1640,7 @@
                     S.wordsLeft = msg.words_left;
                     S.totalWords = Math.max(S.totalWords, msg.score + msg.words_left);
                     S.hints = S.players.map(blankHint);
+                    if (S.myHint !== null) S.lastHint = S.myHint;
                     S.myHint = null;
                     S.guess = null;
                     if (S.me === S.guesser) {
@@ -1470,7 +1648,7 @@
                             el('p', { class: 'big' }, 'You\'re the guesser this round! 🙈'),
                             el('p', {}, 'The others are writing hints for a secret word. Duplicate hints get thrown out, then it\'s your turn to guess.'));
                     } else {
-                        waitingPrompt('Drawing a card');
+                        waitingPrompt('Picking a word');
                     }
                     render();
                     break;
@@ -1484,6 +1662,7 @@
                     S.hints[msg.user].status = 'ready';
                     if (msg.user === S.me) {
                         // replayed after reconnecting: our hint is already in
+                        if (S.hintFor === S.word) S.myHint = S.lastHint;
                         waitingPrompt('Hint locked in! Waiting for the others');
                     }
                     renderTable();
