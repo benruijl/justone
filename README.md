@@ -5,7 +5,7 @@ A web version of the board game [Just One](https://www.boardgamegeek.com/boardga
 
 Playing
 -------
-To play the game online, you can host a server yourself or go to https://justone.duckdns.org/.
+To play the game online, you can host a server yourself or go to https://justone.hoist.workers.dev/.
 
 Everyone plays on their own phone or computer: one player starts a game and shares the link, the
 others join with a name and a password. If your phone locks or your connection drops, the game
