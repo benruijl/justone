@@ -139,7 +139,6 @@ struct Attachment {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Record {
     game: Game,
-    timer_at: Option<u64>,
     expires_at: u64,
 }
 
@@ -174,7 +173,7 @@ impl GameRoom {
         let storage = self.state.storage();
         match record {
             Some(r) => {
-                let next = r.timer_at.map_or(r.expires_at, |t| t.min(r.expires_at));
+                let next = r.expires_at;
                 let json =
                     serde_json::to_string(&r).map_err(|e| Error::RustError(e.to_string()))?;
                 storage.put(STORAGE_KEY, json).await?;
@@ -212,11 +211,8 @@ impl GameRoom {
         }
     }
 
-    /// Apply the outbox to the record: send messages, schedule timers and remove finished games.
+    /// Apply the outbox to the record: send messages and remove finished games.
     async fn commit(&self, mut record: Record, out: Outbox) -> Result<()> {
-        if let Some(ms) = out.timer_ms {
-            record.timer_at = Some(now_ms() + ms);
-        }
         record.expires_at = now_ms() + EXPIRY_MS;
         let finished = record.game.is_finished();
         self.dispatch(out);
@@ -262,7 +258,6 @@ impl GameRoom {
                 ws.serialize_attachment(&attachment)?;
                 let record = Record {
                     game,
-                    timer_at: None,
                     expires_at: 0,
                 };
                 self.commit(record, out).await
@@ -373,27 +368,19 @@ impl DurableObject for GameRoom {
         Ok(())
     }
 
+    /// The only alarm is the expiry of an inactive game.
     async fn alarm(&self) -> Result<Response> {
-        let Some(mut record) = self.load().await? else {
+        let Some(record) = self.load().await? else {
             return Response::ok("");
         };
-        let now = now_ms();
 
-        if now >= record.expires_at {
+        if now_ms() >= record.expires_at {
             for (ws, _) in self.sockets() {
                 let _ = ws.close(Some(1000), Some("game expired"));
             }
             self.save(None).await?;
-            return Response::ok("");
-        }
-
-        if record.timer_at.is_some_and(|t| now >= t) {
-            record.timer_at = None;
-            let mut out = Outbox::default();
-            record.game.timer(&mut out);
-            self.commit(record, out).await?;
         } else {
-            // spurious alarm: reschedule
+            // activity moved the expiry: reschedule
             self.save(Some(record)).await?;
         }
         Response::ok("")

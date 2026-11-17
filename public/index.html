@@ -1,816 +1,1574 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet'>
     <title>Just One</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Baloo+2:wght@500;600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --paper: #fff4df;
+            --dots: #ecd9b5;
+            --ink: #26203d;
+            --muted: #6e6585;
+            --card: #fffdf7;
+            --tomato: #ff5a3c;
+            --sun: #ffc233;
+            --mint: #22b59a;
+            --sky: #3b8cff;
+            --grape: #8a5cf5;
+            --pink: #ff6fae;
+            --shadow: 4px 4px 0 var(--ink);
+            --radius: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
+
         body {
-            background-color: #f5f5f5;
-            width: 600px;
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            background-color: var(--paper);
+            background-image: radial-gradient(var(--dots) 1.4px, transparent 1.4px);
+            background-size: 22px 22px;
+            font-family: 'Baloo 2', system-ui, sans-serif;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+        main {
+            max-width: 760px;
             margin: 0 auto;
-            padding: 0;
-            font-family: 'Abel';
+            padding: 0 16px 48px;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        /* ---------- header ---------- */
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 22px 16px 18px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-family: 'Bagel Fat One', 'Baloo 2', sans-serif;
+            font-weight: 400;
+            font-size: 44px;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .one {
+            display: inline-block;
+            padding: 6px 14px 2px;
+            background: var(--sun);
+            border: 3px solid var(--ink);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            transform: rotate(-5deg);
+        }
+
+        .logo a {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .game-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 6px 4px 14px;
+            background: var(--card);
+            border: 3px solid var(--ink);
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 3px 3px 0 var(--ink);
+        }
+
+        .game-chip code {
+            font-family: 'Patrick Hand', cursive;
             font-size: 22px;
         }
 
-        h4 {
-            font-size: 42px;
-            text-align: center;
+        /* ---------- shared pieces ---------- */
+
+        .card {
+            background: var(--card);
+            border: 3px solid var(--ink);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
         }
 
-        .list {
-            color: #555;
-            font-size: 22px;
-            padding: 0 !important;
-            font-family: courier, monospace;
-            border: 1px solid #dedede;
+        button,
+        .btn {
+            font: inherit;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--ink);
+            background: var(--sun);
+            border: 3px solid var(--ink);
+            border-radius: 14px;
+            padding: 8px 20px 6px;
+            box-shadow: 3px 3px 0 var(--ink);
+            cursor: pointer;
+            transition: transform 0.08s, box-shadow 0.08s, background 0.15s;
+            white-space: nowrap;
         }
 
-        .list li {
-            list-style: none;
-            border-bottom: 1px dotted #ccc;
-            text-indent: 25px;
-            height: auto;
-            padding: 10px;
-            text-transform: capitalize;
+        button:hover:not(:disabled) {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 var(--ink);
         }
 
-        .list li:hover {
-            background-color: #f0f0f0;
-            transition: all 0.2s;
-            -webkit-transition: all 0.2s;
-            -moz-transition: all 0.2s;
-            -ms-transition: all 0.2s;
-            -o-transition: all 0.2s;
+        button:active:not(:disabled) {
+            transform: translate(3px, 3px);
+            box-shadow: 0 0 0 var(--ink);
         }
 
-        .lines {
-            border-left: 1px solid #ffaa9f;
-            border-right: 1px solid #ffaa9f;
-            width: 2px;
-            float: left;
-            height: 0px;
-            margin-left: 40px;
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
 
-        .has_action {
-            border: 2px solid #da6826;
-            border-radius: 5px;
-            padding: 10px 10px 10px 10px;
-            margin: 10px 0px 10px 0px;
+        button.small {
+            font-size: 15px;
+            padding: 3px 12px 1px;
+            border-radius: 999px;
+            box-shadow: 2px 2px 0 var(--ink);
+        }
+
+        button.go {
+            background: var(--mint);
+            color: #fff;
+        }
+
+        button.stop {
+            background: var(--tomato);
+            color: #fff;
+        }
+
+        button.plain {
+            background: var(--card);
+        }
+
+        input,
+        select {
+            font: inherit;
+            font-size: 18px;
+            color: var(--ink);
+            background: #fff;
+            border: 3px solid var(--ink);
+            border-radius: 12px;
+            padding: 6px 12px 4px;
+            min-width: 0;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px var(--sun);
+        }
+
+        input::placeholder {
+            color: #a69fb6;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .row input {
+            flex: 1 1 180px;
+            width: auto;
+        }
+
+        .hand {
+            font-family: 'Patrick Hand', cursive;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .dots span {
+            animation: blink 1.4s infinite both;
+        }
+
+        .dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dots span:nth-child(3) {
+            animation-delay: 0.4s;
         }
 
         @keyframes blink {
-
-            /**
-     * At the start of the animation the dot
-     * has an opacity of .2
-     */
             0% {
-                opacity: .2;
+                opacity: 0.2;
             }
 
-            /**
-     * At 20% the dot is fully visible and
-     * then fades out slowly
-     */
             20% {
                 opacity: 1;
             }
 
-            /**
-     * Until it reaches an opacity of .2 and
-     * the animation can start again
-     */
             100% {
-                opacity: .2;
+                opacity: 0.2;
             }
         }
 
-        .saving span {
-            /**
-     * Use the blink animation, which is defined above
-     */
-            animation-name: blink;
-            /**
-     * The animation should take 1.4 seconds
-     */
-            animation-duration: 1.4s;
-            /**
-     * It will repeat itself forever
-     */
-            animation-iteration-count: infinite;
-            /**
-     * This makes sure that the starting style (opacity: .2)
-     * of the animation is applied before the animation starts.
-     * Otherwise we would see a short flash or would have
-     * to set the default styling of the dots to the same
-     * as the animation. Same applies for the ending styles.
-     */
-            animation-fill-mode: both;
+        /* ---------- lobby ---------- */
+
+        .lobby {
+            padding: 22px;
+            margin-top: 8px;
         }
 
-        .saving span:nth-child(2) {
-            /**
-     * Starts the animation of the third dot
-     * with a delay of .2s, otherwise all dots
-     * would animate at the same time
-     */
-            animation-delay: .2s;
+        .lobby h2 {
+            margin: 0 0 4px;
+            font-size: 26px;
+            line-height: 1.2;
         }
 
-        .saving span:nth-child(3) {
-            /**
-     * Starts the animation of the third dot
-     * with a delay of .4s, otherwise all dots
-     * would animate at the same time
-     */
-            animation-delay: .4s;
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 5px;
+            margin-bottom: 18px;
+            background: var(--paper);
+            border: 3px solid var(--ink);
+            border-radius: 16px;
         }
 
-        blockquote {
-            background: #f9f9f9;
-            border-left: 10px solid #ccc;
-            margin: 1.5em 10px;
-            padding: 0.5em 10px;
-            quotes: "\201C""\201D""\2018""\2019";
+        .tabs button {
+            flex: 1;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+            border-radius: 11px;
+            padding: 6px 10px 4px;
         }
 
-        blockquote:before {
-            color: #ccc;
-            content: open-quote;
-            font-size: 4em;
-            line-height: 0.1em;
-            margin-right: 0.25em;
-            vertical-align: -0.4em;
+        .tabs button:hover:not(:disabled) {
+            transform: none;
+            box-shadow: none;
+            background: #ffe7b0;
         }
 
-        blockquote p {
-            display: inline;
+        .tabs button[aria-selected="true"] {
+            background: var(--ink);
+            color: var(--paper);
         }
 
-        #pass_send {
-            padding: 5px 35px 10px 5px;
-            background: #f0f0f0 url(http://icons.iconarchive.com/icons/google/noto-emoji-animals-nature/64/22266-chicken-icon.png);
-            background-position: 40px 0px;
-            background-size: 30px 30px;
-            background-repeat: no-repeat;
+        .form {
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            gap: 12px 16px;
+            align-items: center;
         }
 
-        .modalDialog {
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            opacity: 1;
+        .form label {
+            font-weight: 700;
         }
 
-        .modalDialog>div {
-            width: 400px;
+        .form .hint {
+            grid-column: 2;
+            margin-top: -8px;
+            font-size: 15px;
+        }
+
+        .form .actions {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .error {
+            color: #c42d12;
+            font-weight: 700;
+        }
+
+        @media (max-width: 520px) {
+            .form {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            .form .hint {
+                grid-column: 1;
+                margin: 0 0 6px;
+            }
+
+            .form input,
+            .form select {
+                margin-bottom: 8px;
+            }
+        }
+
+        /* ---------- status bar ---------- */
+
+        .status {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 6px 0 18px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            padding: 4px 14px 2px;
+            background: var(--card);
+            border: 3px solid var(--ink);
+            border-radius: 14px;
+            box-shadow: 3px 3px 0 var(--ink);
+            font-weight: 700;
+        }
+
+        .stat b {
+            font-weight: 800;
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .stat.score {
+            background: var(--sun);
+        }
+
+        .bump {
+            animation: bump 0.5s;
+        }
+
+        @keyframes bump {
+            30% {
+                transform: scale(1.18) rotate(-3deg);
+            }
+        }
+
+        /* ---------- prompt (what to do now) ---------- */
+
+        .prompt {
             position: relative;
-            margin: 10% auto;
-            padding: 5px 20px 13px 20px;
-            text-align: center;
+            padding: 20px 22px;
+            margin-bottom: 22px;
+        }
+
+        .prompt.your-turn {
+            border-color: var(--tomato);
+            box-shadow: 4px 4px 0 var(--tomato);
+        }
+
+        .prompt.your-turn::before {
+            content: "Your turn!";
+            position: absolute;
+            top: -16px;
+            right: 18px;
+            padding: 2px 12px 0;
+            background: var(--tomato);
+            color: #fff;
+            border: 3px solid var(--ink);
             border-radius: 10px;
-            color: white;
-            background: #993933;
+            font-family: 'Bagel Fat One', sans-serif;
+            font-size: 16px;
+            transform: rotate(4deg);
+            animation: wiggle 2.4s ease-in-out infinite;
         }
 
-        .tab-content {
-            height: auto;
+        @keyframes wiggle {
+
+            0%,
+            100% {
+                transform: rotate(4deg);
+            }
+
+            50% {
+                transform: rotate(-2deg);
+            }
+        }
+
+        .prompt p {
+            margin: 0 0 12px;
+        }
+
+        .prompt p:last-child {
+            margin-bottom: 0;
+        }
+
+        .prompt .big {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .word-card {
+            display: inline-block;
+            margin: 2px 0 14px;
+            padding: 8px 26px 4px;
+            background: var(--sun);
+            border: 3px solid var(--ink);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            font-family: 'Patrick Hand', cursive;
+            font-size: 40px;
+            line-height: 1.1;
+            transform: rotate(-2deg);
+        }
+
+        .invite {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 10px 12px;
+            margin: 4px 0 14px;
+            background: var(--paper);
+            border: 2px dashed var(--ink);
+            border-radius: 12px;
+        }
+
+        .invite a {
+            color: var(--ink);
+            font-weight: 700;
+            word-break: break-all;
+            flex: 1 1 200px;
+        }
+
+        .hold {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hold::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.55);
+            transform-origin: right;
+            animation: unhold 1s linear forwards;
+            pointer-events: none;
+        }
+
+        @keyframes unhold {
+            to {
+                transform: scaleX(0);
+            }
+        }
+
+        /* ---------- table of easels ---------- */
+
+        .table {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 26px 18px;
+            margin-bottom: 26px;
+        }
+
+        .easel {
+            --c: var(--sky);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: rotate(var(--tilt, -1.5deg));
+            transition: transform 0.2s;
+        }
+
+        .easel:nth-child(even) {
+            --tilt: 1.5deg;
+        }
+
+        .easel:nth-child(3n) {
+            --tilt: -0.5deg;
+        }
+
+        .easel.c0 {
+            --c: var(--sky);
+        }
+
+        .easel.c1 {
+            --c: var(--tomato);
+        }
+
+        .easel.c2 {
+            --c: var(--mint);
+        }
+
+        .easel.c3 {
+            --c: var(--grape);
+        }
+
+        .easel.c4 {
+            --c: var(--pink);
+        }
+
+        .easel.c5 {
+            --c: var(--sun);
+        }
+
+        .board {
+            position: relative;
+            width: 100%;
+            min-height: 92px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px 6px;
             background: #fff;
-            color: #000;
-            border-radius: 15px;
-            box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.4);
-            padding: 30px;
-            margin-bottom: 50px;
-        }
-
-        .nav-item {
-            width: 49%;
-        }
-
-        .nav-pills .nav-link {
+            border: 3px solid var(--ink);
+            border-top: 12px solid var(--c);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            font-family: 'Patrick Hand', cursive;
+            font-size: 30px;
+            line-height: 1.05;
             text-align: center;
-            border-radius: 15px;
+            word-break: break-word;
+        }
+
+        .legs {
+            width: 60%;
+            height: 12px;
+            border-left: 3px solid var(--ink);
+            border-right: 3px solid var(--ink);
+            transform: perspective(40px) rotateX(-25deg);
+        }
+
+        .name {
+            margin-top: -2px;
+            padding: 0 10px;
+            max-width: 100%;
+            background: var(--c);
+            color: #fff;
+            border: 3px solid var(--ink);
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .easel.c5 .name {
+            color: var(--ink);
+        }
+
+        .easel.me .name::after {
+            content: " (you)";
+            font-weight: 600;
+        }
+
+        .badge {
+            position: absolute;
+            top: -14px;
+            right: -10px;
+            z-index: 2;
+            padding: 0 8px;
+            background: var(--card);
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 800;
+            transform: rotate(6deg);
+            white-space: nowrap;
+        }
+
+        .board .dots {
+            font-size: 40px;
+            color: var(--muted);
+        }
+
+        .board.ready {
+            color: var(--ink);
+            background: repeating-linear-gradient(45deg, #fff, #fff 8px, color-mix(in srgb, var(--c) 22%, #fff) 8px, color-mix(in srgb, var(--c) 22%, #fff) 16px);
+        }
+
+        .board.ready .tick {
+            font-family: 'Baloo 2', sans-serif;
+            font-weight: 800;
+            font-size: 18px;
+            padding: 0 10px;
+            background: #fff;
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+        }
+
+        .board.guesser {
+            font-family: 'Bagel Fat One', sans-serif;
+            font-size: 46px;
+            background: color-mix(in srgb, var(--c) 15%, #fff);
+        }
+
+        .board.guessing-word {
+            font-size: 30px;
+            font-family: 'Patrick Hand', cursive;
+            background: color-mix(in srgb, var(--c) 15%, #fff);
+        }
+
+        .board.removed {
+            color: #b9b2c7;
+            font-size: 44px;
+        }
+
+        .board .text {
+            display: inline-block;
+        }
+
+        .board.struck .text {
+            position: relative;
+            color: #a59db4;
+        }
+
+        .board.struck .text::after {
+            content: "";
+            position: absolute;
+            left: -8%;
+            right: -8%;
+            top: 48%;
+            height: 6px;
+            background: var(--tomato);
+            border-radius: 6px;
+            transform: rotate(-8deg);
+            animation: scribble 0.25s ease-out;
+            transform-origin: left;
+        }
+
+        @keyframes scribble {
+            from {
+                transform: rotate(-8deg) scaleX(0);
+            }
+        }
+
+        .easel.pickable {
+            cursor: pointer;
+        }
+
+        .easel.pickable:hover {
+            transform: rotate(0deg) translateY(-4px);
+        }
+
+        .easel.pickable.locked {
+            cursor: default;
+        }
+
+        .easel.pickable.locked:hover {
+            transform: rotate(var(--tilt, -1.5deg));
+        }
+
+        .easel.joined .board {
+            animation: pop 0.35s ease-out;
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(0.6);
+                opacity: 0;
+            }
+        }
+
+        /* ---------- last round ---------- */
+
+        .last-round {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 4px 16px;
+            align-items: center;
+            padding: 14px 18px;
+            margin-bottom: 22px;
+            background: var(--card);
+        }
+
+        .last-round .label {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+        }
+
+        .last-round .word {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 34px;
+            line-height: 1.1;
+        }
+
+        .last-round .what {
+            grid-column: 1 / -1;
+        }
+
+        .chips {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .chip {
+            padding: 0 10px;
+            background: var(--paper);
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 20px;
+        }
+
+        .chip small {
+            font-family: 'Baloo 2', sans-serif;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .chip small {
+            margin-left: 2px;
+        }
+
+        .chip.struck .w {
+            text-decoration: line-through;
+            text-decoration-color: var(--tomato);
+            text-decoration-thickness: 3px;
+            color: var(--muted);
+        }
+
+        .stamp {
+            grid-row: 1 / span 2;
+            grid-column: 2;
+            padding: 4px 14px 0;
+            border: 4px solid currentColor;
+            border-radius: 10px;
+            font-family: 'Bagel Fat One', sans-serif;
+            font-size: 26px;
+            text-transform: uppercase;
+            transform: rotate(-9deg);
+            animation: stamp 0.35s cubic-bezier(.3, 1.6, .5, 1);
+            white-space: nowrap;
+        }
+
+        .stamp.correct {
+            color: var(--mint);
+        }
+
+        .stamp.wrong {
+            color: var(--tomato);
+        }
+
+        .stamp.passed {
+            color: #d49400;
+        }
+
+        @keyframes stamp {
+            from {
+                transform: rotate(-20deg) scale(2.2);
+                opacity: 0;
+            }
+        }
+
+        /* ---------- finale ---------- */
+
+        .finale {
+            text-align: center;
+        }
+
+        .finale .points {
+            display: inline-block;
+            margin: 6px 0 10px;
+            padding: 8px 28px 2px;
+            background: var(--sun);
+            border: 3px solid var(--ink);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            font-weight: 800;
+            font-size: 64px;
+            line-height: 1.1;
+            transform: rotate(-3deg);
+            animation: stamp 0.5s cubic-bezier(.3, 1.6, .5, 1);
+        }
+
+        .finale .points small {
+            font-size: 26px;
+            color: var(--muted);
+        }
+
+        /* ---------- quotes ---------- */
+
+        .quotes {
+            margin-top: 40px;
+        }
+
+        .quotes h3 {
+            margin: 0 0 14px;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+        }
+
+        .bubbles {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 18px;
+        }
+
+        .bubble {
+            position: relative;
+            margin: 0 0 10px;
+            padding: 12px 16px;
+            background: var(--card);
+            border: 3px solid var(--ink);
+            border-radius: 18px;
+            font-size: 17px;
+        }
+
+        .bubble::after {
+            content: "";
+            position: absolute;
+            left: 26px;
+            bottom: -12px;
+            width: 18px;
+            height: 18px;
+            background: var(--card);
+            border-right: 3px solid var(--ink);
+            border-bottom: 3px solid var(--ink);
+            transform: rotate(45deg) skew(10deg, 10deg);
+        }
+
+        .bubble cite {
+            display: block;
+            margin-top: 4px;
+            font-style: normal;
+            font-weight: 800;
+        }
+
+        @media (max-width: 400px) {
+            .bubbles {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---------- connection lost ---------- */
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(38, 32, 61, 0.55);
+        }
+
+        .overlay .card {
+            max-width: 420px;
+            padding: 24px;
+            text-align: center;
+            animation: pop 0.3s ease-out;
+        }
+
+        .overlay h2 {
+            margin: 0 0 6px;
+        }
+
+        @media (max-width: 520px) {
+            body {
+                font-size: 17px;
+            }
+
+            .logo {
+                font-size: 36px;
+            }
+
+            .table {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 22px 14px;
+            }
+
+            .board {
+                font-size: 26px;
+                min-height: 80px;
+            }
+
+            .word-card {
+                font-size: 34px;
+            }
+
+            .stamp {
+                font-size: 20px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h4>JUST ONE</h4>
-
-    <div id="lined" class="lines"></div>
-
-    <ul id="players" class="list">
-    </ul>
-
-    <div id="action_div" class="">
-        <div id="chat"></div>
-
-        <div id="submit_container" style="display: none;">
-            <input type="text" id="text" />
-            <button type="button" id="send" autofocus>Submit hint</button>
-
-            <script type="text/javascript">
-                text.onkeyup = function (e) {
-                    if (e.key == "Enter") {
-                        send.click();
-                    }
-                };
-            </script>
+    <header>
+        <h1 class="logo"><a href="/">Just <span class="one">One</span></a></h1>
+        <div class="game-chip" id="game_chip" hidden>
+            Game <code id="game_chip_id"></code>
+            <button class="small plain" id="copy_link" type="button">Copy link</button>
         </div>
+    </header>
 
-        <div id="guess_container" style="display: none;">
-            <input type="text" id="guess_text" />
-            <button type="button" id="guess_send" disabled>Submit guess</button>
-            <button type="button" id="pass_send">Pass</button>
-
-            <script type="text/javascript">
-                guess_text.onkeyup = function () {
-                    guess_send.disabled = guess_text.value.length == 0;
-                }
-            </script>
-        </div>
-
-        <div id="accept_container" style="display: none;">
-            <button type="button" id="accept_send">Accept guess</button>
-            <button type="button" id="reject_send">Reject guess</button>
-        </div>
-
-        <div id="filter_container" style="display: none;">
-            <button type="button" id="filter_send">Submit</button>
-        </div>
-
-        <div id="start_container" style="display: none; text-align: center;">
-            <button type="button" id="start_send" title="At least one player needs to join to start the game" disabled>Start the game!</button>
-        </div>
-    </div>
-    <div id="register_container">
-        <ul class="nav nav-pills" role="tablist">
-            <li class="nav-item active">
-                <a class="nav-link active" data-toggle="pill" href="#join">Join game</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="pill" href="#newgame">New game</a>
-            </li>
-        </ul>
-
-        <div class="tab-content">
-            <div id="join" class="tab-pane fade in active">
-                <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
-                        placeholder="existing game ID" id="game_id_text" data-label="a game id" /></div>
-                <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
-                        id="name_text" data-label="a name" />
-                </div>
-                <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
-                        placeholder="for reconnecting" id="password_text" data-label="a password" /></div>
-                <button type="button" id="join_game_send">Join</button>
-
-                <script type="text/javascript">
-                    var params = new URLSearchParams(window.location.search);
-                    var game_id = params.get('game_id');
-                    if (game_id != null) {
-                        game_id_text.value = game_id;
-                    }
-                </script>
+    <main>
+        <!-- joining or creating a game -->
+        <section id="lobby" class="card lobby">
+            <div class="tabs" role="tablist">
+                <button type="button" role="tab" id="tab_join" aria-selected="true">Join a game</button>
+                <button type="button" role="tab" id="tab_new" aria-selected="false">Start a new game</button>
             </div>
-            <div id="newgame" class="tab-pane fade">
-                <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
-                        placeholder="Empty=random id" id="new_game_id_text" /></div>
-                <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
-                        id="new_name_text" data-label="a name" />
-                </div>
-                <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
-                        placeholder="for reconnecting" id="new_password_text" data-label="a password" /></div>
-                <div><span style="min-width: 150px; display: inline-block;">Word list:</span><select style="width:158px"
-                        name="word_list_select" id="word_list_select">
-                        <option value="dutch">Dutch</option>
-                        <option value="english" selected>English</option>
-                        <option value="french">French</option>
-                        <option value="german">German</option>
-                        <option value="hungarian">Hungarian</option>
-                        <option value="italian">Italian</option>
-                    </select>
-                </div>
-                <div><span style="min-width: 150px; display: inline-block;">Word count:</span><input type="number"
-                        id="word_count" min="2" max="100" value="13">
-                </div>
-                <button type="button" id="new_game_send">New Game</button>
 
-                <script type="text/javascript">
-                    var params = new URLSearchParams(window.location.search);
-                    var game_id = params.get('game_id');
-                    if (game_id != null) {
-                        new_game_id_text.value = game_id;
-                    }
-                </script>
+            <form id="join_form" class="form" autocomplete="on">
+                <label for="join_game_id">Game id</label>
+                <input id="join_game_id" name="game_id" placeholder="from your host" data-label="a game id" autocomplete="off">
+                <label for="join_name">Your name</label>
+                <input id="join_name" name="name" placeholder="what friends call you" data-label="your name" autocomplete="nickname">
+                <label for="join_password">Password</label>
+                <input id="join_password" name="password" placeholder="anything" data-label="a password" autocomplete="off">
+                <span class="hint muted">Use the same name and password to get back into a game.</span>
+                <div class="actions">
+                    <button type="submit" class="go">Join game</button>
+                    <span class="error" id="join_error"></span>
+                </div>
+            </form>
+
+            <form id="new_form" class="form" autocomplete="on" hidden>
+                <label for="new_game_id">Game id</label>
+                <input id="new_game_id" name="game_id" placeholder="leave empty for a random id" autocomplete="off">
+                <label for="new_name">Your name</label>
+                <input id="new_name" name="name" placeholder="what friends call you" data-label="your name" autocomplete="nickname">
+                <label for="new_password">Password</label>
+                <input id="new_password" name="password" placeholder="anything" data-label="a password" autocomplete="off">
+                <span class="hint muted">Use the same name and password to get back into a game.</span>
+                <label for="new_word_list">Words</label>
+                <select id="new_word_list" name="word_list">
+                    <option value="dutch">Dutch</option>
+                    <option value="english" selected>English</option>
+                    <option value="french">French</option>
+                    <option value="german">German</option>
+                    <option value="hungarian">Hungarian</option>
+                    <option value="italian">Italian</option>
+                </select>
+                <label for="new_word_count">Cards</label>
+                <input id="new_word_count" name="word_count" type="number" min="1" max="100" value="13">
+                <div class="actions">
+                    <button type="submit" class="go">Create game</button>
+                    <span class="error" id="new_error"></span>
+                </div>
+            </form>
+        </section>
+
+        <!-- the game itself -->
+        <section id="game" hidden>
+            <div class="status" id="status" hidden>
+                <div class="stat score">⭐ Score <b id="score">0</b></div>
+                <div class="stat">🃏 Cards left <b id="words_left">13</b></div>
             </div>
-        </div>
-    </div>
 
+            <div class="card prompt" id="prompt"></div>
 
-    <div id="score_container" style="text-align: center; display: none; margin-top: 10px;">
-        <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
-            <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px">Score</div>
-            <div id='score_span' style="text-align: center;">0</div>
-        </div>
-        <div style="border: 1px solid gray; width: 100px; border-radius: 3px; display: inline-block;">
-            <div style="text-align: center; font-weight: bold; margin: 5px 0px 5px 0px;">Words left</div>
-            <div id='words_left_span' style="text-align: center;">13</div>
-        </div>
-    </div>
+            <div class="card last-round" id="last_round" hidden></div>
 
-    <script type="text/javascript">
-        var sanitizeHTML = function (str) {
-            var temp = document.createElement('div');
-            temp.textContent = str;
-            return temp.innerHTML;
+            <div class="table" id="table"></div>
+        </section>
+
+        <section class="quotes">
+            <h3>Overheard at the table</h3>
+            <div class="bubbles">
+                <blockquote class="bubble">I'm going to pick the third-most obvious one.<cite>Andreas</cite></blockquote>
+                <blockquote class="bubble">I have an obscure hint: how much do you know about Polynesian agricultural societies?<cite>Ben</cite></blockquote>
+                <blockquote class="bubble">Your hint is 'numan'?! What does that even mean?<cite>Sandra</cite></blockquote>
+                <blockquote class="bubble">Two clues left? Only a real chicken would pass.<cite>Michael</cite></blockquote>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        'use strict';
+
+        const $ = (id) => document.getElementById(id);
+
+        // create an element: el('div', {class: 'x', onclick: f}, 'text', child, ...)
+        function el(tag, props, ...children) {
+            const e = document.createElement(tag);
+            for (const [k, v] of Object.entries(props || {})) {
+                if (v === undefined || v === null || v === false) continue;
+                if (k === 'class') e.className = v;
+                else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+                else e.setAttribute(k, v === true ? '' : v);
+            }
+            for (const c of children.flat()) {
+                if (c === null || c === undefined || c === false) continue;
+                e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+            }
+            return e;
+        }
+
+        const dots = () => el('span', { class: 'dots' }, el('span', {}, '.'), el('span', {}, '.'), el('span', {}, '.'));
+
+        // ---------- state ----------
+
+        const S = {
+            phase: 'lobby', // lobby | waiting | hinting | filtering | guessing | judging | finished
+            me: null,
+            gameId: '',
+            players: [],
+            hints: [], // per player: {status: waiting|ready|shown|removed, text, struck, auto}
+            guesser: -1,
+            judge: -1,
+            score: 0,
+            wordsLeft: 0,
+            totalWords: 0,
+            word: '',
+            guess: null,
+            myHint: null,
+            last: null,
         };
 
-        var ws = null;
-        var ping_timer = null;
+        const name = (i) => S.players[i] || '?';
+        const blankHint = () => ({ status: 'waiting', text: null, struck: false, auto: false });
+
+        // ---------- connection ----------
+
+        let ws = null;
+        let pingTimer = null;
+
+        function send(msg) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(msg));
+            }
+        }
 
         // connect to the server for a game and send the first message once connected
-        function connect(game_id, first_msg) {
+        function connect(gameId, firstMsg, errorEl) {
             if (ws !== null) {
                 // drop a previous (rejected) connection without showing the error pop-up
                 ws.onclose = null;
                 ws.close();
             }
-            clearInterval(ping_timer);
-            chat.innerHTML = '<p><em>Connecting to game...</em></p>';
+            clearInterval(pingTimer);
+            errorEl.replaceChildren('Connecting', dots());
 
-            var scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
-            ws = new WebSocket(scheme + location.host + '/chat?game_id=' + encodeURIComponent(game_id.trim()));
-            ws.onopen = function () {
-                chat.innerText = "";
-                ws.send(JSON.stringify(first_msg));
+            const scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            ws = new WebSocket(scheme + location.host + '/chat?game_id=' + encodeURIComponent(gameId.trim()));
+            ws.onopen = () => {
+                ws.send(JSON.stringify(firstMsg));
                 // keep the connection alive; answered by the server without waking the game
-                ping_timer = setInterval(function () { ws.send("ping"); }, 30000);
+                pingTimer = setInterval(() => ws.send('ping'), 30000);
             };
-            ws.onmessage = function (msg) {
-                if (msg.data === "pong") {
-                    return;
-                }
-                console.log(msg);
-                message(msg.data);
+            ws.onmessage = (e) => {
+                if (e.data === 'pong') return;
+                handle(JSON.parse(e.data), errorEl);
             };
-            ws.onclose = onclose;
-            ws.onerror = function (error) {
-                console.log(`[error] ${error.message}`);
-            };
+            ws.onclose = connectionLost;
         }
 
-        var player_list = [];
-        var current_player = 0;
-        var guess_player = 0;
-        var decision_player = 1;
-        var reconnecting = false;
-
-        var waiting_animation = '<span class="saving"><span>.</span><span>.</span><span>.</span></span>';
-
-        function message(data) {
-            console.log("Incoming raw message", data);
-            var msg = JSON.parse(data);
-            switch (msg.type) {
-                case "Rejected":
-                    chat.innerText = "Error: " + msg.reason + ".";
-                    $(action_div).addClass('has_action');
-                    reconnecting = true;
-                    break;
-                case "Reconnecting":
-                    $(register_container).hide();
-                    $(action_div).removeClass('has_action');
-                    chat.innerText = "You will be reconnected to the game once it reaches a checkpoint.";
-                    break;
-                case "WordSubmitted":
-                    // remove the waiting animation
-                    var line = players.childNodes[msg.user];
-                    var word = document.createElement('div');
-                    word.style.display = 'inline';
-                    word.innerText = '';
-                    line.replaceChild(word, line.childNodes[1]);
-                    break;
-                case "Finished":
-                    $(guess_container).hide();
-                    $(accept_container).hide();
-                    $(score_container).hide();
-                    $(action_div).removeClass('has_action');
-                    chat.innerText = "";
-                    var line = document.createElement('p');
-                    line.innerText = "The game is over! You scored " + msg.points + " points";
-                    chat.appendChild(line);
-                    break;
-                case "UserAdded":
-                    current_player = msg.id; // set the id of the current client
-                    $(register_container).hide();
-                    $(action_div).removeClass('has_action');
-                    chat.innerText = "Waiting for players to join and for the host to start the game";
-                    var line = document.createElement('li');
-                    line.innerHTML = '<b>' + sanitizeHTML(msg.username) + ' - </b><div id="a' + player_list.length.toString() + '" style="display: inline;"><emph>joined</emph></div>';
-                    player_list.push([-100, msg.username.toString(), "", false]);
-                    players.appendChild(line);
-
-                    $(lined).css('height', '+=46px');
-
-                    chat.innerText = "";
-
-                    if (!reconnecting) {
-                        var line = document.createElement('p');
-                        var link = window.location.origin + '?game_id=' + sanitizeHTML(msg.game_id);
-                        line.innerHTML = "Invite friends using game id <b>" + sanitizeHTML(msg.game_id) + '</b> or sharing  <a href=' + link + '>this link</a>!';
-                        chat.appendChild(line);
-                    }
-
-
-                    if (current_player == 0) {
-                        $(start_container).show();
-                        start_send.disabled = player_list.length < 2;
-                        $(action_div).removeClass('has_action');
-                    } else {
-                        chat.innerText = "Waiting for the host to start the game...";
-                    }
-
-                    break;
-                case "RoundStart":
-                    guess_player = msg.current_user;
-                    decision_player = msg.decision_user;
-                    $(accept_container).hide();
-                    $(start_container).hide();
-                    $(action_div).removeClass('has_action');
-
-                    score_span.innerText = msg.score.toString();
-                    words_left_span.innerText = msg.words_left.toString();
-                    $(score_container).show();
-
-                    players.innerText = "";
-                    for (var i = 0; i < player_list.length; i++) {
-                        var line = document.createElement('li');
-                        line.id = "li" + i.toString();
-
-                        if (i == guess_player) {
-                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + '*</b>';
-                        } else {
-                            line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>' + waiting_animation;
-                        }
-
-                        players.appendChild(line);
-                    }
-
-                    if (guess_player == current_player) {
-                        chat.innerText = "";
-                        var line = document.createElement('p');
-                        line.innerText = "You are the player who has to guess the word! Waiting for the hints...";
-                        chat.appendChild(line);
-                    }
-                    break;
-                case "WordSubmissionRequest":
-                    $(guess_container).hide();
-
-                    chat.innerText = "";
-                    var line = document.createElement('p');
-                    line.innerHTML = "Come up with a hint for <b>" + sanitizeHTML(msg.word) + "</b>";
-                    chat.appendChild(line);
-                    $(submit_container).show();
-                    $(action_div).addClass('has_action');
-                    $(text).focus();
-                    break;
-                case "WordGuessRequest":
-                    chat.innerText = "";
-                    $(guess_container).show();
-                    $(action_div).addClass('has_action');
-                    $(guess_text).focus();
-                    break;
-                case "AcceptGuessRequest":
-                    chat.innerText = "";
-                    $(accept_container).show();
-                    $(action_div).addClass('has_action');
-                    break;
-                case "ShowRoundOverview":
-                    chat.innerText = "";
-                    $(guess_container).hide();
-                    $(action_div).removeClass('has_action');
-                    players.innerText = "";
-                    for (var i = 0; i < msg.overview.length; i++) {
-                        if (msg.overview[i] == null) {
-                            if (i == guess_player) {
-                                player_list[i][2] = 'PASSED';
-                            } else {
-                                player_list[i][2] = '';
-                            }
-                            player_list[i][3] = false;
-                        } else {
-                            player_list[i][2] = msg.overview[i][0].toString();
-                            player_list[i][3] = msg.overview[i][1];
-                        }
-
-                        var line = document.createElement('li');
-                        line.id = "li" + i.toString();
-
-                        line.innerHTML = '<b>' + sanitizeHTML(player_list[i][1]) + ' - </b>';
-
-                        var word = document.createElement('div');
-                        word.id = 'a' + i.toString();
-                        word.style.display = 'inline';
-                        if (player_list[i][3]) {
-                            word.style.textDecoration = "line-through";
-                        }
-                        word.innerText = player_list[i][2];
-
-                        if (i == guess_player) {
-                            word.innerText += '(' + msg.word_to_guess.toString() + ')';
-                        }
-
-                        line.appendChild(word);
-
-                        let index = i;
-                        let w = word;
-                        line.onclick = function () {
-                            if (w.style.textDecoration == "line-through") {
-                                w.style.textDecoration = "";
-                                player_list[index][3] = false;
-                            } else {
-                                w.style.textDecoration = "line-through";
-                                player_list[index][3] = true;
-                            }
-                            console.log(player_list);
-                        };
-
-                        players.appendChild(line);
-                    }
-                    break;
-                case "ShowWords":
-                    //<div style="min-width:20px; display:inline-block;">⌛</div>
-                    chat.innerText = "";
-                    $(submit_container).hide();
-                    $(action_div).removeClass('has_action');
-
-                    players.innerText = "";
-                    for (var i = 0; i < msg.words.length; i++) {
-                        if (msg.words[i] == null) {
-                            player_list[i][2] = '';
-                            player_list[i][3] = false;
-                        } else {
-                            player_list[i][2] = msg.words[i][0].toString();
-                            player_list[i][3] = msg.words[i][1];
-                        }
-
-                        var line = document.createElement('li');
-                        line.id = "li" + i.toString();
-                        var player_name = document.createElement('b');
-
-
-                        if (i == guess_player) {
-                            player_name.innerText = player_list[i][1] + '*';
-                        } else {
-                            player_name.innerText = player_list[i][1] + ' - ';
-                        }
-                        line.appendChild(player_name);
-
-                        var word = document.createElement('div');
-                        word.id = 'a' + i.toString();
-                        word.style.display = 'inline';
-                        if (player_list[i][3]) {
-                            word.style.textDecoration = "line-through";
-                        }
-                        word.innerText = player_list[i][2];
-                        line.appendChild(word);
-
-                        if (i == decision_player && decision_player != current_player) {
-                            var waiting = document.createElement('div');
-                            waiting.style.display = 'inline';
-                            waiting.innerHTML = " " + waiting_animation; //"⌛";
-                            line.appendChild(waiting);
-                        }
-
-                        let index = i;
-                        let w = word;
-                        line.onclick = function () {
-                            if (w.style.textDecoration == "line-through") {
-                                w.style.textDecoration = "";
-                                player_list[index][3] = false;
-                            } else {
-                                w.style.textDecoration = "line-through";
-                                player_list[index][3] = true;
-                            }
-                            console.log(player_list);
-                        };
-
-                        players.appendChild(line);
-                    }
-                    break;
-                case "ShowFilteredWords":
-                    chat.innerText = "";
-                    $(filter_container).hide();
-                    $(action_div).removeClass('has_action');
-                    players.innerText = "";
-                    for (var i = 0; i < msg.words.length; i++) {
-                        if (msg.words[i] == null) {
-                            if (i != current_player && i == guess_player) {
-                                player_list[i][2] = waiting_animation;
-                            } else {
-                                player_list[i][2] = '';
-                            }
-                        } else {
-                            player_list[i][2] = sanitizeHTML(msg.words[i].toString());
-                        }
-                        player_list[i][3] = false;
-
-                        var line = document.createElement('li');
-                        line.id = "li" + i.toString();
-                        var player_name = document.createElement('b');
-                        player_name.innerText = player_list[i][1] + ' - ';
-                        line.appendChild(player_name);
-
-                        var word = document.createElement('div');
-                        word.id = 'a' + i.toString();
-                        word.style.display = 'inline';
-                        word.innerHTML = player_list[i][2];
-                        line.appendChild(word);
-                        players.appendChild(line);
-                    }
-                    break;
-                case "ManualDuplicateEliminationRequest":
-                    chat.innerText = "";
-                    var line = document.createElement('p');
-                    line.innerText = "Strike out all duplicate words by clicking on them and then submit.";
-                    chat.appendChild(line);
-                    $(filter_container).show();
-                    $(action_div).addClass('has_action');
-                    break;
-                default:
-                    var line = document.createElement('p');
-                    line.innerText = "Unknown message: " + data;
-                    chat.appendChild(line);
-                    console.log("Unknown message", msg);
-                    break;
-            }
-        }
-        function onclose(event) {
-            clearInterval(ping_timer);
-            if (event.wasClean) {
-                console.log(`[close] Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
-            } else {
-                console.log(`[close] Connection died: code=${event.code}, reason=${event.reason}`);
-            }
-
-            // create error pop-up
-            var openModalInside = document.createElement('div');
-            openModalInside.innerText = "The connection to the server was lost. Please refresh the page.";
-            var openModal = document.createElement('div');
-            openModal.id = "openModal";
-            openModal.className = "modalDialog";
-            openModal.appendChild(openModalInside);
-            document.getElementsByTagName('body')[0].appendChild(openModal);
+        function connectionLost() {
+            clearInterval(pingTimer);
+            document.body.append(el('div', { class: 'overlay' },
+                el('div', { class: 'card' },
+                    el('h2', {}, 'Oops, we lost the connection'),
+                    el('p', {}, S.me === null
+                        ? 'Reload the page to try again.'
+                        : 'Reload the page and join with the same name and password to get back in.'),
+                    el('button', { type: 'button', onclick: () => location.reload() }, 'Reload'))));
         }
 
-        send.onclick = function () {
-            var msg = {
-                type: "WordSubmission",
-                word: text.value,
-            };
+        // ---------- lobby ----------
 
-            var line = players.childNodes[current_player];
-            var word = document.createElement('div');
-            word.style.display = 'inline';
-            word.innerHTML = '<b>' + text.value + '</b>';
-            line.replaceChild(word, line.childNodes[1]);
+        function selectTab(tab) {
+            const join = tab === 'join';
+            $('tab_join').setAttribute('aria-selected', join);
+            $('tab_new').setAttribute('aria-selected', !join);
+            $('join_form').hidden = !join;
+            $('new_form').hidden = join;
+        }
+        $('tab_join').onclick = () => selectTab('join');
+        $('tab_new').onclick = () => selectTab('new');
 
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-            text.value = '';
-        };
-
-        guess_send.onclick = function () {
-            var msg = {
-                type: "WordGuess",
-                word: guess_text.value,
-            };
-
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-            guess_text.value = '';
-        };
-
-        pass_send.onclick = function () {
-            var msg = {
-                type: "WordGuess",
-                word: "",
-            };
-
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-            guess_text.value = '';
-        };
-
-        accept_send.onclick = function () {
-            var msg = {
-                type: "AcceptGuess",
-                accept: true,
-            };
-
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-        };
-
-        reject_send.onclick = function () {
-            var msg = {
-                type: "AcceptGuess",
-                accept: false,
-            };
-
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-        };
-
-        filter_send.onclick = function () {
-            var filter_ids = []
-            for (var i = 0; i < player_list.length; i++) {
-                if (player_list[i][3]) {
-                    filter_ids.push(i);
-                }
-            }
-
-            var msg = {
-                type: "ManualDuplicateElimination",
-                ids: filter_ids,
-            };
-
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-        };
-
-        start_send.onclick = function () {
-            var msg = {
-                type: "StartGame",
-            };
-
-            console.log(JSON.stringify(msg))
-            ws.send(JSON.stringify(msg));
-        };
-
-        // the name and password fields may be filled in by the browser without any input events,
-        // so they are checked on click instead of enabling the buttons on key presses
-        function fields_missing(fields) {
-            if (fields.every(function (f) { return f.value.trim().length > 0; })) {
-                return false;
-            }
-            chat.innerHTML = '<p><em>Please fill in ' + fields.map(function (f) { return f.dataset.label; }).join(' and ') + '.</em></p>';
+        // the fields may be filled in by the browser without any input events, so they are checked on submit
+        function missing(fields, errorEl) {
+            const empty = fields.filter((f) => f.value.trim() === '');
+            if (empty.length === 0) return false;
+            errorEl.textContent = 'Please fill in ' + empty.map((f) => f.dataset.label).join(' and ') + '.';
+            empty[0].focus();
             return true;
         }
 
-        join_game_send.onclick = function () {
-            if (fields_missing([game_id_text, name_text, password_text])) {
-                return;
-            }
-            var msg = {
-                type: "JoinGame",
-                name: name_text.value,
-                password: password_text.value,
-                game_id: game_id_text.value,
-            };
+        function remember(name, password) {
+            try {
+                localStorage.setItem('justone', JSON.stringify({ name, password }));
+            } catch (e) { /* storage unavailable */ }
+        }
 
-            console.log(JSON.stringify(msg))
-            connect(msg.game_id, msg);
+        $('join_form').onsubmit = (e) => {
+            e.preventDefault();
+            const err = $('join_error');
+            if (missing([$('join_game_id'), $('join_name'), $('join_password')], err)) return;
+            remember($('join_name').value.trim(), $('join_password').value);
+            connect($('join_game_id').value, {
+                type: 'JoinGame',
+                game_id: $('join_game_id').value.trim(),
+                name: $('join_name').value.trim(),
+                password: $('join_password').value,
+            }, err);
         };
 
-        new_game_send.onclick = function () {
-            if (fields_missing([new_name_text, new_password_text])) {
+        $('new_form').onsubmit = (e) => {
+            e.preventDefault();
+            const err = $('new_error');
+            if (missing([$('new_name'), $('new_password')], err)) return;
+            remember($('new_name').value.trim(), $('new_password').value);
+            connect($('new_game_id').value, {
+                type: 'NewGame',
+                game_id: $('new_game_id').value.trim(),
+                name: $('new_name').value.trim(),
+                password: $('new_password').value,
+                word_list: $('new_word_list').value,
+                word_count: parseInt($('new_word_count').value, 10) || 13,
+            }, err);
+        };
+
+        (function initLobby() {
+            const params = new URLSearchParams(location.search);
+            const id = params.get('game_id');
+            if (id) {
+                $('join_game_id').value = id;
+                $('new_game_id').value = id;
+            }
+            if (params.get('new')) selectTab('new');
+            try {
+                const saved = JSON.parse(localStorage.getItem('justone') || 'null');
+                if (saved) {
+                    for (const f of ['join_name', 'new_name']) $(f).value = saved.name || '';
+                    for (const f of ['join_password', 'new_password']) $(f).value = saved.password || '';
+                }
+            } catch (e) { /* storage unavailable */ }
+        })();
+
+        function inviteLink() {
+            return location.origin + '/?game_id=' + encodeURIComponent(S.gameId);
+        }
+
+        $('copy_link').onclick = async () => {
+            try {
+                await navigator.clipboard.writeText(inviteLink());
+                $('copy_link').textContent = 'Copied!';
+            } catch (e) {
+                $('copy_link').textContent = 'Copy failed';
+            }
+            setTimeout(() => ($('copy_link').textContent = 'Copy link'), 1500);
+        };
+
+        function showGame() {
+            $('lobby').hidden = true;
+            $('game').hidden = false;
+            $('game_chip').hidden = false;
+            $('game_chip_id').textContent = S.gameId;
+        }
+
+        // ---------- rendering ----------
+
+        function setPrompt(yourTurn, ...children) {
+            const p = $('prompt');
+            p.classList.toggle('your-turn', yourTurn);
+            p.replaceChildren(...children);
+            const input = p.querySelector('input');
+            if (input) input.focus();
+        }
+
+        function setNumber(id, value) {
+            const e = $(id);
+            if (e.textContent !== String(value)) {
+                e.textContent = value;
+                e.parentElement.classList.remove('bump');
+                void e.offsetWidth; // restart the animation
+                e.parentElement.classList.add('bump');
+            }
+        }
+
+        function renderStatus() {
+            $('status').hidden = S.phase === 'waiting' || S.phase === 'lobby';
+            setNumber('score', S.score);
+            setNumber('words_left', S.wordsLeft);
+        }
+
+        function renderTable(newPlayer) {
+            const inRound = !['lobby', 'waiting', 'finished'].includes(S.phase);
+            const picking = S.phase === 'filtering' && S.me === S.judge;
+
+            $('table').replaceChildren(...S.players.map((n, i) => {
+                const h = S.hints[i] || blankHint();
+                let board;
+
+                if (!inRound) {
+                    board = el('div', { class: 'board' }, S.phase === 'finished' ? '🎉' : '👋');
+                } else if (i === S.guesser) {
+                    board = S.phase === 'judging' && S.guess !== null
+                        ? el('div', { class: 'board guessing-word' }, el('span', { class: 'text' }, S.guess))
+                        : el('div', { class: 'board guesser' }, '?');
+                } else if (h.status === 'waiting') {
+                    board = el('div', { class: 'board' }, dots());
+                } else if (h.status === 'ready') {
+                    board = i === S.me && S.myHint
+                        ? el('div', { class: 'board' }, el('span', { class: 'text' }, S.myHint))
+                        : el('div', { class: 'board ready' }, el('span', { class: 'tick' }, '✓ ready'));
+                } else if (h.status === 'removed') {
+                    board = el('div', { class: 'board removed', title: 'Removed as a duplicate' }, '✕');
+                } else {
+                    board = el('div', { class: 'board' + (h.struck ? ' struck' : '') }, el('span', { class: 'text' }, h.text || ''));
+                }
+
+                let badge = null;
+                if (!inRound && S.phase !== 'finished' && i === 0) badge = '👑 host';
+                else if (inRound && i === S.guesser) badge = '🤔 guessing';
+                else if (inRound && i === S.judge) badge = '⚖️ judge';
+
+                const pickable = picking && i !== S.guesser && h.status === 'shown';
+                const classes = ['easel', 'c' + (i % 6)];
+                if (i === S.me) classes.push('me');
+                if (pickable) classes.push('pickable');
+                if (pickable && h.auto) classes.push('locked');
+                if (newPlayer && i === S.players.length - 1) classes.push('joined');
+
+                return el('div', {
+                    class: classes.join(' '),
+                    title: pickable ? (h.auto ? 'Identical hints are removed automatically' : 'Click to cross out or restore') : null,
+                    onclick: pickable && !h.auto ? () => { h.struck = !h.struck; renderTable(); } : null,
+                },
+                    badge && el('span', { class: 'badge' }, badge),
+                    board,
+                    el('div', { class: 'legs' }),
+                    el('div', { class: 'name' }, n));
+            }));
+        }
+
+        const OUTCOME = {
+            correct: ['Got it!', (g, w) => [name(g) + ' guessed it.']],
+            wrong: ['Missed', (g, w, guess) => [name(g) + ' guessed “', el('b', {}, guess), '”, which cost an extra card.']],
+            passed: ['Passed', (g) => [name(g) + ' passed. 🐔']],
+        };
+
+        function renderLastRound() {
+            const r = S.last;
+            const box = $('last_round');
+            if (!r) {
+                box.hidden = true;
                 return;
             }
-            var msg = {
-                type: "NewGame",
-                name: new_name_text.value,
-                password: new_password_text.value,
-                game_id: new_game_id_text.value,
-                word_list: word_list_select.value,
-                word_count: parseInt(word_count.value),
-            };
+            const guess = r.overview[r.guess_user] ? r.overview[r.guess_user][0] : null;
+            const [stamp, describe] = OUTCOME[r.outcome];
+            const hints = r.overview
+                .map((h, i) => (h && i !== r.guess_user ? el('span', { class: 'chip' + (h[1] ? ' struck' : '') }, el('span', { class: 'w' }, h[0]), ' ', el('small', {}, name(i))) : null))
+                .filter(Boolean);
 
-            console.log(JSON.stringify(msg))
-            connect(msg.game_id, msg);
-        };
+            box.replaceChildren(
+                el('div', { class: 'label' }, S.phase === 'finished' ? 'Final round' : 'Last round'),
+                el('div', { class: 'stamp ' + r.outcome }, stamp),
+                el('div', { class: 'word' }, r.word_to_guess),
+                el('div', { class: 'what' }, describe(r.guess_user, r.word_to_guess, guess)),
+                hints.length ? el('div', { class: 'chips' }, hints) : null);
+            box.hidden = false;
+        }
+
+        function render(newPlayer) {
+            renderStatus();
+            renderTable(newPlayer);
+        }
+
+        // ---------- prompts ----------
+
+        function waitingPrompt(...text) {
+            setPrompt(false, el('p', { class: 'big' }, ...text, ' ', dots()));
+        }
+
+        function lobbyPrompt() {
+            const invite = el('div', { class: 'invite' },
+                '🔗', el('a', { href: inviteLink() }, inviteLink()),
+                el('button', {
+                    class: 'small plain', type: 'button', onclick: (e) => {
+                        navigator.clipboard.writeText(inviteLink()).then(() => (e.target.textContent = 'Copied!'), () => { });
+                    }
+                }, 'Copy'));
+
+            if (S.me === 0) {
+                const enough = S.players.length >= 2;
+                setPrompt(false,
+                    el('p', { class: 'big' }, 'Gather your crew!'),
+                    el('p', {}, 'Send this link to your friends, or tell them the game id ', el('b', {}, S.gameId), '.'),
+                    invite,
+                    el('div', { class: 'row' },
+                        el('button', { type: 'button', class: 'go', disabled: !enough, onclick: () => send({ type: 'StartGame' }) }, 'Start the game!'),
+                        el('span', { class: 'muted' }, enough ? S.players.length + ' players at the table.' : 'You need at least one more player.')));
+            } else {
+                setPrompt(false,
+                    el('p', { class: 'big' }, 'You\'re in! Waiting for ', name(0), ' to start the game ', dots()),
+                    el('p', { class: 'muted' }, 'Know someone else who wants to play?'),
+                    invite);
+            }
+        }
+
+        function hintPrompt() {
+            const input = el('input', { placeholder: 'One word…', maxlength: 40, autocomplete: 'off', 'aria-label': 'Your hint' });
+            const submit = () => {
+                const word = input.value.trim();
+                if (!word) return input.focus();
+                send({ type: 'WordSubmission', word });
+                S.myHint = word;
+                S.hints[S.me].status = 'ready';
+                waitingPrompt('Hint locked in! Waiting for the others');
+                renderTable();
+            };
+            input.onkeydown = (e) => e.key === 'Enter' && submit();
+            setPrompt(true,
+                el('p', {}, 'Help ', el('b', {}, name(S.guesser)), ' guess this word:'),
+                el('div', { class: 'word-card' }, S.word),
+                el('p', { class: 'muted' }, 'Write a one-word hint. If someone else writes the same hint, both are removed.'),
+                el('div', { class: 'row' }, input, el('button', { type: 'button', onclick: submit }, 'Give hint')));
+        }
+
+        function guessPrompt() {
+            const input = el('input', { placeholder: 'Your guess…', maxlength: 60, autocomplete: 'off', 'aria-label': 'Your guess' });
+            const guess = () => {
+                const word = input.value.trim();
+                if (!word) return input.focus();
+                send({ type: 'WordGuess', word });
+                waitingPrompt('Fingers crossed');
+            };
+            input.onkeydown = (e) => e.key === 'Enter' && guess();
+            setPrompt(true,
+                el('p', { class: 'big' }, 'What\'s the word? Look at the hints below.'),
+                el('div', { class: 'row' },
+                    input,
+                    el('button', { type: 'button', class: 'go', onclick: guess }, 'Guess'),
+                    el('button', {
+                        type: 'button', class: 'plain', title: 'Skipping costs one card; a wrong guess costs two',
+                        onclick: () => { send({ type: 'WordGuess', word: '' }); waitingPrompt('Chicken mode engaged'); }
+                    }, 'Pass 🐔')),
+                el('p', { class: 'muted' }, 'A wrong guess costs two cards; passing costs one.'));
+        }
+
+        function judgePrompt() {
+            const yes = el('button', { type: 'button', class: 'go hold', disabled: true }, '✓ Counts');
+            const no = el('button', { type: 'button', class: 'stop hold', disabled: true }, '✗ Nope');
+            const decide = (accept) => {
+                send({ type: 'AcceptGuess', accept });
+                waitingPrompt('Noted');
+            };
+            yes.onclick = () => decide(true);
+            no.onclick = () => decide(false);
+            // a short pause against accidental clicks
+            setTimeout(() => { yes.disabled = false; no.disabled = false; }, 1000);
+            setPrompt(true,
+                el('p', {}, el('b', {}, name(S.guesser)), ' guessed'),
+                el('div', { class: 'word-card' }, S.guess),
+                el('p', { class: 'big' }, 'The word was “', S.word, '”. Does that count?'),
+                el('div', { class: 'row' }, yes, no));
+        }
+
+        function finalePrompt(points) {
+            const total = Math.max(S.totalWords, points, 1);
+            const ratio = points / total;
+            const verdict =
+                ratio >= 1 ? 'Flawless. Are you sure you\'re not sharing one brain?' :
+                    ratio >= 0.8 ? 'Brilliant! Totally on the same wavelength.' :
+                        ratio >= 0.6 ? 'Great teamwork!' :
+                            ratio >= 0.4 ? 'Not bad. The chicken is mildly impressed.' :
+                                ratio >= 0.2 ? 'Room for improvement. Maybe try less obscure hints?' :
+                                    'Ouch. Did everyone write the same hint?';
+            setPrompt(false, el('div', { class: 'finale' },
+                el('p', { class: 'big' }, 'That\'s the last card!'),
+                el('div', { class: 'points' }, points, el('small', {}, ' / ' + total)),
+                el('p', { class: 'big' }, verdict),
+                el('button', {
+                    type: 'button', class: 'go',
+                    onclick: () => (location.href = '/?new=1&game_id=' + encodeURIComponent(S.gameId))
+                }, 'Play again')));
+        }
+
+        // ---------- server messages ----------
+
+        function handle(msg, errorEl) {
+            switch (msg.type) {
+                case 'Rejected':
+                    errorEl.textContent = 'Sorry, ' + msg.reason + '.';
+                    break;
+
+                case 'Reconnecting':
+                    // the server sends the whole game state again
+                    S.players = [];
+                    S.hints = [];
+                    S.phase = 'waiting';
+                    waitingPrompt('Welcome back! Catching up');
+                    break;
+
+                case 'UserAdded':
+                    S.me = msg.id;
+                    S.gameId = msg.game_id;
+                    S.players.push(msg.username);
+                    S.hints.push(blankHint());
+                    if (S.phase === 'lobby') S.phase = 'waiting';
+                    showGame();
+                    if (S.phase === 'waiting') lobbyPrompt();
+                    render(true);
+                    break;
+
+                case 'RoundStart':
+                    S.phase = 'hinting';
+                    S.guesser = msg.current_user;
+                    S.judge = msg.decision_user;
+                    S.score = msg.score;
+                    S.wordsLeft = msg.words_left;
+                    S.totalWords = Math.max(S.totalWords, msg.score + msg.words_left);
+                    S.hints = S.players.map(blankHint);
+                    S.myHint = null;
+                    S.guess = null;
+                    if (S.me === S.guesser) {
+                        setPrompt(false,
+                            el('p', { class: 'big' }, 'You\'re the guesser this round! 🙈'),
+                            el('p', {}, 'The others are writing hints for a secret word. Duplicate hints get thrown out, then it\'s your turn to guess.'));
+                    } else {
+                        waitingPrompt('Drawing a card');
+                    }
+                    render();
+                    break;
+
+                case 'WordSubmissionRequest':
+                    S.word = msg.word;
+                    hintPrompt();
+                    break;
+
+                case 'WordSubmitted':
+                    S.hints[msg.user].status = 'ready';
+                    if (msg.user === S.me) {
+                        // replayed after reconnecting: our hint is already in
+                        waitingPrompt('Hint locked in! Waiting for the others');
+                    }
+                    renderTable();
+                    break;
+
+                case 'ShowWords':
+                    S.phase = 'filtering';
+                    msg.words.forEach((w, i) => {
+                        if (i === S.guesser) return;
+                        S.hints[i] = w
+                            ? { status: 'shown', text: w[0], struck: w[1], auto: w[1] }
+                            : { status: 'shown', text: '', struck: false, auto: true };
+                    });
+                    if (S.me !== S.judge) waitingPrompt('Hints are in! ', name(S.judge), ' is crossing out duplicates');
+                    renderTable();
+                    break;
+
+                case 'ManualDuplicateEliminationRequest':
+                    setPrompt(true,
+                        el('p', { class: 'big' }, 'You\'re the judge: cross out duplicate hints.'),
+                        el('p', {}, 'Identical hints are already crossed out. Click any other hints that are too similar ',
+                            '(like “prince” and “princess”) to cross them out too, then confirm.'),
+                        el('button', {
+                            type: 'button', class: 'go', onclick: () => {
+                                const ids = S.hints.map((h, i) => (h.struck && !h.auto ? i : -1)).filter((i) => i >= 0);
+                                send({ type: 'ManualDuplicateElimination', ids });
+                                waitingPrompt('Sending the hints to ', name(S.guesser));
+                            }
+                        }, 'Show the hints to ' + name(S.guesser)));
+                    renderTable();
+                    break;
+
+                case 'ShowFilteredWords':
+                    S.phase = 'guessing';
+                    msg.words.forEach((w, i) => {
+                        if (i === S.guesser) return;
+                        const h = S.hints[i];
+                        if (w !== null) S.hints[i] = { status: 'shown', text: w, struck: false, auto: false };
+                        else if (h && h.text) S.hints[i] = { ...h, status: 'shown', struck: true };
+                        else S.hints[i] = { status: 'removed', text: null, struck: true, auto: true };
+                    });
+                    if (S.me !== S.guesser) waitingPrompt(name(S.guesser), ' is thinking');
+                    renderTable();
+                    break;
+
+                case 'WordGuessRequest':
+                    guessPrompt();
+                    break;
+
+                case 'ShowRoundOverview':
+                    S.phase = 'judging';
+                    S.word = msg.word_to_guess;
+                    S.guess = msg.overview[S.guesser] ? msg.overview[S.guesser][0] : null;
+                    msg.overview.forEach((w, i) => {
+                        if (i !== S.guesser && w) S.hints[i] = { status: 'shown', text: w[0], struck: w[1], auto: true };
+                    });
+                    if (S.me !== S.judge) {
+                        waitingPrompt(name(S.guesser), ' guessed “', S.guess, '” for “', S.word, '”. ', name(S.judge), ' decides if it counts');
+                    }
+                    renderTable();
+                    break;
+
+                case 'AcceptGuessRequest':
+                    judgePrompt();
+                    break;
+
+                case 'RoundResult':
+                    S.last = msg;
+                    renderLastRound();
+                    break;
+
+                case 'Finished':
+                    S.phase = 'finished';
+                    S.score = msg.points;
+                    S.wordsLeft = 0;
+                    finalePrompt(msg.points);
+                    renderLastRound();
+                    render();
+                    break;
+
+                default:
+                    console.log('Unknown message', msg);
+            }
+        }
     </script>
-
-    <div>
-        <h3>User comments</h3>
-        <blockquote>"I'm going to pick the third-most obvious one" - Andreas</blockquote>
-
-        <blockquote>"I have an obscure hint: how much do you know about Polynesian agricultural societies?" - Ben
-        </blockquote>
-        <blockquote>"Your hint is 'numan'?! What does that even mean?" - Sandra</blockquote>
-        <blockquote>"Two clues left? Only a real chicken would pass" - Michael</blockquote>
-    </div>
 </body>
 
 </html>

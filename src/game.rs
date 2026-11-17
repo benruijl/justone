@@ -1,15 +1,10 @@
 //! The Just One game logic as an event-driven state machine.
 //!
 //! The game holds no I/O: every call takes an [`Outbox`] that collects the messages to send
-//! to each player and an optional timer to schedule. This lets the same code run inside a
-//! Cloudflare Durable Object (where state is persisted between events) and in native tests.
+//! to each player. This lets the same code run inside a Cloudflare Durable Object (where state
+//! is persisted between events) and in native tests.
 
 use serde::{Deserialize, Serialize};
-
-/// How long the round overview is shown before the next round when the guesser passed.
-pub const PASS_DELAY_MS: u64 = 10_000;
-/// How long the round overview is shown before the decision player is asked to accept a guess.
-pub const ACCEPT_DELAY_MS: u64 = 2_000;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WordList {
@@ -79,6 +74,9 @@ pub enum ServerMessage {
         overview: Vec<Option<(String, bool)>>,
     },
     AcceptGuessRequest,
+    /// The outcome of a round. Clients keep showing it during the next round, so the game
+    /// never has to pause for players to read it.
+    RoundResult(RoundResult),
     Finished {
         points: usize,
     },
@@ -90,12 +88,27 @@ pub enum ServerMessage {
     },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Outcome {
+    Correct,
+    Wrong,
+    Passed,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RoundResult {
+    pub word_to_guess: String,
+    pub guess_user: usize,
+    /// Per player: the hint (or the guess, for the guesser) and whether it was struck.
+    pub overview: Vec<Option<(String, bool)>>,
+    pub outcome: Outcome,
+}
+
 #[derive(Debug, Default)]
 pub struct Outbox {
     /// Messages per receiving player id.
     pub messages: Vec<(usize, ServerMessage)>,
-    /// Call [`Game::timer`] after this many milliseconds.
-    pub timer_ms: Option<u64>,
 }
 
 impl Outbox {
@@ -110,11 +123,8 @@ pub enum State {
     WordSubmission,
     ManualDuplicateElimination,
     WordGuess,
-    /// The round overview is shown. If the guesser made a guess, the decision player is asked
-    /// to accept it once the timer fires (`decision_requested` becomes true).
-    AcceptGuess {
-        decision_requested: bool,
-    },
+    /// The decision player is asked to accept a guess that does not match the word exactly.
+    AcceptGuess,
     Finished,
 }
 
@@ -138,6 +148,7 @@ pub struct Game {
     word_to_guess: String,
     score: usize,
     words_left: usize,
+    last_result: Option<RoundResult>,
     rng: u64,
 }
 
@@ -154,6 +165,7 @@ impl Game {
             word_to_guess: String::new(),
             score: 0,
             words_left: word_count.clamp(1, 1000),
+            last_result: None,
             rng: seed | 1,
         }
     }
@@ -280,77 +292,67 @@ impl Game {
             return;
         }
 
+        let word = word.trim().to_string();
+        let exact = word.to_lowercase() == self.word_to_guess.trim().to_lowercase();
         self.players[player].word_guess = if word.is_empty() { None } else { Some(word) };
 
-        self.state = State::AcceptGuess {
-            decision_requested: false,
-        };
-
-        let overview = self.overview();
-        for i in 0..self.players.len() {
-            out.send(
-                i,
-                ServerMessage::ShowRoundOverview {
-                    word_to_guess: self.word_to_guess.clone(),
-                    overview: overview.clone(),
-                },
-            );
-        }
-
-        out.timer_ms = Some(if self.players[self.guess_user].word_guess.is_none() {
-            PASS_DELAY_MS
-        } else {
-            ACCEPT_DELAY_MS
-        });
-    }
-
-    /// Called when the timer requested through [`Outbox::timer_ms`] fires.
-    pub fn timer(&mut self, out: &mut Outbox) {
-        if self.state
-            != (State::AcceptGuess {
-                decision_requested: false,
-            })
-        {
-            return;
-        }
-
-        let guess = self.players[self.guess_user].word_guess.as_deref();
-        if guess.is_none() {
-            // the player passed
-            self.words_left -= 1;
-            self.end_round(out);
-        } else if guess
-            .is_some_and(|g| g.trim().to_lowercase() == self.word_to_guess.trim().to_lowercase())
-        {
+        if self.players[player].word_guess.is_none() {
+            self.finish_round(Outcome::Passed, out);
+        } else if exact {
             // an exact match needs no decision
-            self.score += 1;
-            self.words_left -= 1;
-            self.end_round(out);
+            self.finish_round(Outcome::Correct, out);
         } else {
-            self.state = State::AcceptGuess {
-                decision_requested: true,
-            };
+            self.state = State::AcceptGuess;
+            let overview = self.overview();
+            for i in 0..self.players.len() {
+                out.send(
+                    i,
+                    ServerMessage::ShowRoundOverview {
+                        word_to_guess: self.word_to_guess.clone(),
+                        overview: overview.clone(),
+                    },
+                );
+            }
             out.send(self.decision_user, ServerMessage::AcceptGuessRequest);
         }
     }
 
     pub fn accept_guess(&mut self, player: usize, accept: bool, out: &mut Outbox) {
-        if self.state
-            != (State::AcceptGuess {
-                decision_requested: true,
-            })
-            || player != self.decision_user
-        {
+        if self.state != State::AcceptGuess || player != self.decision_user {
             return;
         }
 
-        if accept {
-            self.score += 1;
-            self.words_left -= 1;
-        } else {
+        self.finish_round(
+            if accept {
+                Outcome::Correct
+            } else {
+                Outcome::Wrong
+            },
+            out,
+        );
+    }
+
+    fn finish_round(&mut self, outcome: Outcome, out: &mut Outbox) {
+        match outcome {
+            Outcome::Correct => {
+                self.score += 1;
+                self.words_left -= 1;
+            }
+            Outcome::Passed => self.words_left -= 1,
             // a wrong guess costs the current and the next card
-            self.words_left = self.words_left.saturating_sub(2);
+            Outcome::Wrong => self.words_left = self.words_left.saturating_sub(2),
         }
+
+        let result = RoundResult {
+            word_to_guess: self.word_to_guess.clone(),
+            guess_user: self.guess_user,
+            overview: self.overview(),
+            outcome,
+        };
+        for i in 0..self.players.len() {
+            out.send(i, ServerMessage::RoundResult(result.clone()));
+        }
+        self.last_result = Some(result);
 
         self.end_round(out);
     }
@@ -491,6 +493,10 @@ impl Game {
             out.send(user, self.user_added(user, &p.name));
         }
 
+        if let Some(r) = &self.last_result {
+            out.send(user, ServerMessage::RoundResult(r.clone()));
+        }
+
         if self.state != State::WaitingForPlayers && self.state != State::Finished {
             out.send(user, self.round_start());
         }
@@ -538,7 +544,7 @@ impl Game {
                     out.send(user, ServerMessage::WordGuessRequest);
                 }
             }
-            State::AcceptGuess { decision_requested } => {
+            State::AcceptGuess => {
                 out.send(
                     user,
                     ServerMessage::ShowRoundOverview {
@@ -546,7 +552,7 @@ impl Game {
                         overview: self.overview(),
                     },
                 );
-                if decision_requested && user == self.decision_user {
+                if user == self.decision_user {
                     out.send(user, ServerMessage::AcceptGuessRequest);
                 }
             }
@@ -675,21 +681,33 @@ mod tests {
 
         let mut out = Outbox::default();
         g.word_guess(guesser, "guess".into(), &mut out);
-        assert_eq!(out.timer_ms, Some(ACCEPT_DELAY_MS));
-        // accepting before the request is ignored
-        g.accept_guess(decider, true, &mut Outbox::default());
+        assert_eq!(g.state, State::AcceptGuess);
+        assert!(to(&out, decider).contains(&&ServerMessage::AcceptGuessRequest));
+        // only the decision player decides
+        g.accept_guess(guesser, true, &mut Outbox::default());
         assert_eq!(g.score, 0);
 
         let mut out = Outbox::default();
-        g.timer(&mut out);
-        assert_eq!(
-            out.messages,
-            vec![(decider, ServerMessage::AcceptGuessRequest)]
-        );
-        g.accept_guess(decider, true, &mut Outbox::default());
+        g.accept_guess(decider, true, &mut out);
         assert_eq!((g.score, g.words_left), (1, 2));
         assert_eq!(g.state, State::WordSubmission);
         assert_eq!(g.guess_user, (guesser + 1) % 4);
+        // the result comes before the next round starts
+        match to(&out, 0)[..2] {
+            [ServerMessage::RoundResult(r), ServerMessage::RoundStart { .. }] => {
+                assert_eq!(r.outcome, Outcome::Correct);
+                assert_eq!(r.overview[guesser], Some(("guess".into(), false)));
+            }
+            ref m => panic!("unexpected {:?}", m),
+        }
+
+        // a reconnecting player sees the last result again
+        let mut out = Outbox::default();
+        g.join("p0".into(), "pw".into(), &mut out).unwrap();
+        assert!(out
+            .messages
+            .iter()
+            .any(|(_, m)| matches!(m, ServerMessage::RoundResult(_))));
     }
 
     #[test]
@@ -703,25 +721,25 @@ mod tests {
             g.manual_duplicate_elimination(g.decision_user, vec![], &mut Outbox::default());
             let mut out = Outbox::default();
             g.word_guess(g.guess_user, guess.into(), &mut out);
-            out.timer_ms
+            out
         };
 
-        // pass: costs one word after the long delay
-        assert_eq!(play(&mut g, ""), Some(PASS_DELAY_MS));
-        g.timer(&mut Outbox::default());
+        // pass: costs one word, and the next round starts right away
+        let out = play(&mut g, "  ");
         assert_eq!(g.words_left, 2);
+        assert_eq!(g.state, State::WordSubmission);
+        assert!(
+            matches!(&to(&out, 0)[0], ServerMessage::RoundResult(r) if r.outcome == Outcome::Passed)
+        );
 
         // wrong guess costs two words and ends the game
         play(&mut g, "nope");
-        g.timer(&mut Outbox::default());
         let mut out = Outbox::default();
         g.accept_guess(g.decision_user, false, &mut out);
         assert!(g.is_finished());
-        assert_eq!(to(&out, 0), vec![&ServerMessage::Finished { points: 0 }]);
-
-        // a stale timer does nothing
-        g.timer(&mut Outbox::default());
-        assert!(g.is_finished());
+        assert!(
+            matches!(&to(&out, 0)[..], [ServerMessage::RoundResult(r), ServerMessage::Finished { points: 0 }] if r.outcome == Outcome::Wrong)
+        );
     }
 
     #[test]
@@ -731,10 +749,9 @@ mod tests {
         g.word_submission(1 - g.guess_user, "hint".into(), &mut Outbox::default());
         g.manual_duplicate_elimination(g.decision_user, vec![], &mut Outbox::default());
         let guess = format!(" {} ", g.word_to_guess.to_uppercase());
-        g.word_guess(g.guess_user, guess, &mut Outbox::default());
 
         let mut out = Outbox::default();
-        g.timer(&mut out);
+        g.word_guess(g.guess_user, guess, &mut out);
         assert!(!out
             .messages
             .iter()
