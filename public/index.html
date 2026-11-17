@@ -1780,6 +1780,18 @@
             }
         }
     </script>
+
+    <script>
+        // Cloudflare Web Analytics (no cookies): only on the public site, so that self-hosted
+        // copies of the game do not report their visitors there
+        if (location.hostname === 'justone.hoist.workers.dev') {
+            const beacon = document.createElement('script');
+            beacon.type = 'module';
+            beacon.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+            beacon.dataset.cfBeacon = JSON.stringify({ token: '87455eed4e4c4aaaac212b7cfe5a0fb1' });
+            document.body.append(beacon);
+        }
+    </script>
 </body>
 
 </html>
