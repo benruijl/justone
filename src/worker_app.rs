@@ -10,39 +10,10 @@ use std::cell::RefCell;
 use serde::{Deserialize, Serialize};
 use worker::*;
 
-use crate::game::{Game, Outbox, ServerMessage, WordList};
+use crate::game::{Game, ServerMessage};
+use crate::room::{self, EXPIRY_MS};
 
-/// Games are removed after this much inactivity.
-const EXPIRY_MS: u64 = 90 * 60 * 1000;
 const STORAGE_KEY: &str = "record";
-
-#[derive(Debug, Deserialize)]
-#[serde(tag = "type")]
-enum ClientMessage {
-    NewGame {
-        name: String,
-        password: String,
-        word_list: WordList,
-        word_count: usize,
-    },
-    JoinGame {
-        name: String,
-        password: String,
-    },
-    WordSubmission {
-        word: String,
-    },
-    ManualDuplicateElimination {
-        ids: Vec<usize>,
-    },
-    WordGuess {
-        word: String,
-    },
-    AcceptGuess {
-        accept: bool,
-    },
-    StartGame,
-}
 
 fn now_ms() -> u64 {
     Date::now().as_millis()
@@ -54,35 +25,11 @@ fn random_u64() -> u64 {
     (hi << 32) | lo
 }
 
-fn random_game_id() -> String {
-    const CHARS: &[u8] = b"abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    (0..5)
-        .map(|_| CHARS[(js_sys::Math::random() * CHARS.len() as f64) as usize] as char)
-        .collect()
-}
-
-fn valid_game_id(id: &str) -> bool {
-    !id.is_empty()
-        && id.len() <= 32
-        && id
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
-}
-
 fn send(ws: &WebSocket, msg: &ServerMessage) {
     if let Ok(text) = serde_json::to_string(msg) {
         // the socket may already be closed; nothing to do then
         let _ = ws.send_with_str(text);
     }
-}
-
-fn reject(ws: &WebSocket, reason: &str) {
-    send(
-        ws,
-        &ServerMessage::Rejected {
-            reason: reason.to_string(),
-        },
-    );
 }
 
 #[event(fetch)]
@@ -101,18 +48,15 @@ async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .map(|(_, v)| v.trim().to_string())
         .unwrap_or_default();
     let game_id = if requested.is_empty() {
-        random_game_id()
+        room::game_id_from_random(random_u64())
     } else {
         requested
     };
 
-    if !valid_game_id(&game_id) {
+    if !room::valid_game_id(&game_id) {
         let pair = WebSocketPair::new()?;
         pair.server.accept()?;
-        reject(
-            &pair.server,
-            "the game id may only contain letters, digits, - and _ (at most 32 characters)",
-        );
+        send(&pair.server, &room::rejected(room::INVALID_GAME_ID));
         return Response::from_websocket(pair.client);
     }
 
@@ -200,122 +144,60 @@ impl GameRoom {
             .collect()
     }
 
-    fn dispatch(&self, out: Outbox) {
-        let sockets = self.sockets();
-        for (to, msg) in &out.messages {
-            for (ws, a) in &sockets {
-                if a.player == Some(*to) {
-                    send(ws, msg);
-                }
-            }
-        }
-    }
-
-    /// Apply the outbox to the record: send messages and remove finished games.
-    async fn commit(&self, mut record: Record, out: Outbox) -> Result<()> {
-        record.expires_at = now_ms() + EXPIRY_MS;
-        let finished = record.game.is_finished();
-        self.dispatch(out);
-        self.save(if finished { None } else { Some(record) }).await
-    }
-
     async fn handle_message(&self, ws: &WebSocket, text: &str) -> Result<()> {
         let Some(mut attachment) = ws.deserialize_attachment::<Attachment>()? else {
             return Ok(());
         };
-        let msg: ClientMessage = match serde_json::from_str(text) {
-            Ok(m) => m,
-            Err(e) => {
-                console_warn!("Client sent unknown message: {}; Error: {}", text, e);
-                return Ok(());
-            }
-        };
 
-        let record = self.load().await?;
-        let mut out = Outbox::default();
+        let mut game = self.load().await?.map(|r| r.game);
+        let player_before = attachment.player;
+        let response = room::handle_message(
+            &mut game,
+            &attachment.game_id,
+            &mut attachment.player,
+            text,
+            random_u64(),
+        );
 
-        match msg {
-            ClientMessage::NewGame {
-                name,
-                password,
-                word_list,
-                word_count,
-            } => {
-                if record.is_some() {
-                    reject(ws, "the game id already exists");
-                    return Ok(());
+        // the attachment decides who gets player messages, so update it first
+        if attachment.player != player_before {
+            ws.serialize_attachment(&attachment)?;
+        }
+        for msg in &response.reply {
+            send(ws, msg);
+        }
+
+        let sockets = self.sockets();
+        if let Some(p) = response.replaces_player {
+            for (other, a) in &sockets {
+                if a.player == Some(p) && a.conn != attachment.conn {
+                    let _ = other.close(Some(1000), Some(room::RECONNECTED_ELSEWHERE));
                 }
-                let mut game = Game::new(
-                    attachment.game_id.clone(),
-                    word_list,
-                    word_count,
-                    random_u64(),
-                );
-                let id = game
-                    .join(name, password, &mut out)
-                    .map_err(Error::RustError)?;
-                attachment.player = Some(id);
-                ws.serialize_attachment(&attachment)?;
-                let record = Record {
-                    game,
-                    expires_at: 0,
-                };
-                self.commit(record, out).await
-            }
-            ClientMessage::JoinGame { name, password } => {
-                let Some(mut record) = record else {
-                    reject(ws, "the game id does not exist");
-                    return Ok(());
-                };
-                match record.game.join(name, password, &mut out) {
-                    Ok(id) => {
-                        // a reconnecting player replaces their old connection
-                        for (other, a) in self.sockets() {
-                            if a.player == Some(id) && a.conn != attachment.conn {
-                                let _ = other.close(Some(1000), Some("reconnected elsewhere"));
-                            }
-                        }
-                        attachment.player = Some(id);
-                        ws.serialize_attachment(&attachment)?;
-                        self.commit(record, out).await
-                    }
-                    Err(reason) => {
-                        reject(ws, &reason);
-                        Ok(())
-                    }
-                }
-            }
-            msg => {
-                let (Some(player), Some(mut record)) = (attachment.player, record) else {
-                    return Ok(());
-                };
-                let game = &mut record.game;
-                match msg {
-                    ClientMessage::WordSubmission { word } => {
-                        game.word_submission(player, word, &mut out)
-                    }
-                    ClientMessage::ManualDuplicateElimination { ids } => {
-                        game.manual_duplicate_elimination(player, ids, &mut out)
-                    }
-                    ClientMessage::WordGuess { word } => game.word_guess(player, word, &mut out),
-                    ClientMessage::AcceptGuess { accept } => {
-                        game.accept_guess(player, accept, &mut out)
-                    }
-                    ClientMessage::StartGame => game.start_game(player, &mut out),
-                    ClientMessage::NewGame { .. } | ClientMessage::JoinGame { .. } => {
-                        unreachable!()
-                    }
-                }
-                self.commit(record, out).await
             }
         }
+        for (to, msg) in &response.to_players {
+            for (other, a) in &sockets {
+                if a.player == Some(*to) {
+                    send(other, msg);
+                }
+            }
+        }
+
+        if response.changed {
+            self.save(game.map(|game| Record {
+                game,
+                expires_at: now_ms() + EXPIRY_MS,
+            }))
+            .await?;
+        }
+        Ok(())
     }
 }
 
 impl DurableObject for GameRoom {
     fn new(state: State, _env: Env) -> Self {
         // keepalive pings are answered without waking the object
-        if let Ok(pair) = worker_sys::WebSocketRequestResponsePair::new("ping", "pong") {
+        if let Ok(pair) = worker_sys::WebSocketRequestResponsePair::new(room::PING, room::PONG) {
             state.set_websocket_auto_response(&pair);
         }
         Self {
@@ -376,7 +258,7 @@ impl DurableObject for GameRoom {
 
         if now_ms() >= record.expires_at {
             for (ws, _) in self.sockets() {
-                let _ = ws.close(Some(1000), Some("game expired"));
+                let _ = ws.close(Some(1000), Some(room::GAME_EXPIRED));
             }
             self.save(None).await?;
         } else {
