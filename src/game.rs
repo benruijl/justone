@@ -172,7 +172,12 @@ impl Game {
 
     /// Add a player, or reconnect a player with the same name and password.
     /// Returns the player id or the reason for rejection.
-    pub fn join(&mut self, name: String, password: String, out: &mut Outbox) -> Result<usize, String> {
+    pub fn join(
+        &mut self,
+        name: String,
+        password: String,
+        out: &mut Outbox,
+    ) -> Result<usize, String> {
         if let Some(i) = self.players.iter().position(|p| p.name == name) {
             if self.players[i].password != password {
                 return Err("the password does not match the existing player's".into());
@@ -250,7 +255,12 @@ impl Game {
         }
     }
 
-    pub fn manual_duplicate_elimination(&mut self, player: usize, ids: Vec<usize>, out: &mut Outbox) {
+    pub fn manual_duplicate_elimination(
+        &mut self,
+        player: usize,
+        ids: Vec<usize>,
+        out: &mut Outbox,
+    ) {
         if self.state != State::ManualDuplicateElimination || player != self.decision_user {
             return;
         }
@@ -304,8 +314,16 @@ impl Game {
             return;
         }
 
-        if self.players[self.guess_user].word_guess.is_none() {
+        let guess = self.players[self.guess_user].word_guess.as_deref();
+        if guess.is_none() {
             // the player passed
+            self.words_left -= 1;
+            self.end_round(out);
+        } else if guess
+            .is_some_and(|g| g.trim().to_lowercase() == self.word_to_guess.trim().to_lowercase())
+        {
+            // an exact match needs no decision
+            self.score += 1;
             self.words_left -= 1;
             self.end_round(out);
         } else {
@@ -409,10 +427,18 @@ impl Game {
         let words = self.overview();
         for i in 0..self.players.len() {
             if i != self.guess_user {
-                out.send(i, ServerMessage::ShowWords { words: words.clone() });
+                out.send(
+                    i,
+                    ServerMessage::ShowWords {
+                        words: words.clone(),
+                    },
+                );
             }
         }
-        out.send(self.decision_user, ServerMessage::ManualDuplicateEliminationRequest);
+        out.send(
+            self.decision_user,
+            ServerMessage::ManualDuplicateEliminationRequest,
+        );
     }
 
     fn start_word_guess(&mut self, out: &mut Outbox) {
@@ -420,7 +446,12 @@ impl Game {
 
         let words = self.filtered_words();
         for i in 0..self.players.len() {
-            out.send(i, ServerMessage::ShowFilteredWords { words: words.clone() });
+            out.send(
+                i,
+                ServerMessage::ShowFilteredWords {
+                    words: words.clone(),
+                },
+            );
         }
         out.send(self.guess_user, ServerMessage::WordGuessRequest);
     }
@@ -485,7 +516,12 @@ impl Game {
             }
             State::ManualDuplicateElimination => {
                 if user != self.guess_user {
-                    out.send(user, ServerMessage::ShowWords { words: self.overview() });
+                    out.send(
+                        user,
+                        ServerMessage::ShowWords {
+                            words: self.overview(),
+                        },
+                    );
                 }
                 if user == self.decision_user {
                     out.send(user, ServerMessage::ManualDuplicateEliminationRequest);
@@ -577,17 +613,23 @@ mod tests {
         assert_eq!(to(&out, 0).len(), 1);
         assert_eq!(to(&out, 2).len(), 3);
 
-        assert!(g.join("p0".into(), "wrong".into(), &mut Outbox::default()).is_err());
+        assert!(g
+            .join("p0".into(), "wrong".into(), &mut Outbox::default())
+            .is_err());
 
         g.start_game(0, &mut Outbox::default());
-        assert!(g.join("new".into(), "pw".into(), &mut Outbox::default()).is_err());
+        assert!(g
+            .join("new".into(), "pw".into(), &mut Outbox::default())
+            .is_err());
 
         let mut out = Outbox::default();
         assert_eq!(g.join("p0".into(), "pw".into(), &mut out), Ok(0));
         assert_eq!(out.messages[0].1, ServerMessage::Reconnecting { id: 0 });
-        assert!(to(&out, 0).contains(&&ServerMessage::WordSubmissionRequest {
-            word: g.word_to_guess.clone()
-        }));
+        assert!(
+            to(&out, 0).contains(&&ServerMessage::WordSubmissionRequest {
+                word: g.word_to_guess.clone()
+            })
+        );
     }
 
     #[test]
@@ -595,7 +637,8 @@ mod tests {
         let mut g = game_with(1, 13);
         g.start_game(0, &mut Outbox::default());
         assert_eq!(g.state, State::WaitingForPlayers);
-        g.join("p1".into(), "pw".into(), &mut Outbox::default()).unwrap();
+        g.join("p1".into(), "pw".into(), &mut Outbox::default())
+            .unwrap();
         g.start_game(1, &mut Outbox::default());
         assert_eq!(g.state, State::WaitingForPlayers);
         g.start_game(0, &mut Outbox::default());
@@ -628,10 +671,7 @@ mod tests {
         // out-of-range ids are ignored
         g.manual_duplicate_elimination(decider, vec![99], &mut Outbox::default());
         assert_eq!(g.state, State::WordGuess);
-        assert_eq!(
-            g.filtered_words().iter().filter(|w| w.is_some()).count(),
-            1
-        );
+        assert_eq!(g.filtered_words().iter().filter(|w| w.is_some()).count(), 1);
 
         let mut out = Outbox::default();
         g.word_guess(guesser, "guess".into(), &mut out);
@@ -642,7 +682,10 @@ mod tests {
 
         let mut out = Outbox::default();
         g.timer(&mut out);
-        assert_eq!(out.messages, vec![(decider, ServerMessage::AcceptGuessRequest)]);
+        assert_eq!(
+            out.messages,
+            vec![(decider, ServerMessage::AcceptGuessRequest)]
+        );
         g.accept_guess(decider, true, &mut Outbox::default());
         assert_eq!((g.score, g.words_left), (1, 2));
         assert_eq!(g.state, State::WordSubmission);
@@ -679,6 +722,25 @@ mod tests {
         // a stale timer does nothing
         g.timer(&mut Outbox::default());
         assert!(g.is_finished());
+    }
+
+    #[test]
+    fn exact_guess_is_accepted_automatically() {
+        let mut g = game_with(2, 3);
+        g.start_game(0, &mut Outbox::default());
+        g.word_submission(1 - g.guess_user, "hint".into(), &mut Outbox::default());
+        g.manual_duplicate_elimination(g.decision_user, vec![], &mut Outbox::default());
+        let guess = format!(" {} ", g.word_to_guess.to_uppercase());
+        g.word_guess(g.guess_user, guess, &mut Outbox::default());
+
+        let mut out = Outbox::default();
+        g.timer(&mut out);
+        assert!(!out
+            .messages
+            .iter()
+            .any(|(_, m)| *m == ServerMessage::AcceptGuessRequest));
+        assert_eq!((g.score, g.words_left), (1, 2));
+        assert_eq!(g.state, State::WordSubmission);
     }
 
     #[test]

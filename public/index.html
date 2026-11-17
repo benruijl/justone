@@ -215,9 +215,7 @@
     </ul>
 
     <div id="action_div" class="">
-        <div id="chat">
-            <p><em>Connecting to game...</em></p>
-        </div>
+        <div id="chat"></div>
 
         <div id="submit_container" style="display: none;">
             <input type="text" id="text" />
@@ -270,13 +268,13 @@
         <div class="tab-content">
             <div id="join" class="tab-pane fade in active">
                 <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
-                        placeholder="existing game ID" id="game_id_text" /></div>
+                        placeholder="existing game ID" id="game_id_text" data-label="a game id" /></div>
                 <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
-                        id="name_text" />
+                        id="name_text" data-label="a name" />
                 </div>
                 <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
-                        placeholder="for reconnecting" id="password_text" /></div>
-                <button type="button" id="join_game_send" disabled>Join</button>
+                        placeholder="for reconnecting" id="password_text" data-label="a password" /></div>
+                <button type="button" id="join_game_send">Join</button>
 
                 <script type="text/javascript">
                     var params = new URLSearchParams(window.location.search);
@@ -284,24 +282,16 @@
                     if (game_id != null) {
                         game_id_text.value = game_id;
                     }
-
-                    name_text.onkeyup = function () {
-                        join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
-                    }
-
-                    password_text.onkeyup = function () {
-                        join_game_send.disabled = name_text.value.length == 0 || password_text.value.length == 0;
-                    }
                 </script>
             </div>
             <div id="newgame" class="tab-pane fade">
                 <div><span style="min-width: 150px; display: inline-block;">Game id:</span><input type="text"
                         placeholder="Empty=random id" id="new_game_id_text" /></div>
                 <div><span style="min-width: 150px; display: inline-block;">Name:</span><input type="text"
-                        id="new_name_text" />
+                        id="new_name_text" data-label="a name" />
                 </div>
                 <div><span style="min-width: 150px; display: inline-block;">Password:</span><input type="text"
-                        placeholder="for reconnecting" id="new_password_text" /></div>
+                        placeholder="for reconnecting" id="new_password_text" data-label="a password" /></div>
                 <div><span style="min-width: 150px; display: inline-block;">Word list:</span><select style="width:158px"
                         name="word_list_select" id="word_list_select">
                         <option value="dutch">Dutch</option>
@@ -315,21 +305,13 @@
                 <div><span style="min-width: 150px; display: inline-block;">Word count:</span><input type="number"
                         id="word_count" min="2" max="100" value="13">
                 </div>
-                <button type="button" id="new_game_send" disabled>New Game</button>
+                <button type="button" id="new_game_send">New Game</button>
 
                 <script type="text/javascript">
                     var params = new URLSearchParams(window.location.search);
                     var game_id = params.get('game_id');
                     if (game_id != null) {
                         new_game_id_text.value = game_id;
-                    }
-
-                    new_name_text.onkeyup = function () {
-                        new_game_send.disabled = new_name_text.value.length == 0 || new_password_text.value.length == 0;
-                    }
-
-                    new_password_text.onkeyup = function () {
-                        new_game_send.disabled = new_name_text.value.length == 0 || new_password_text.value.length == 0;
                     }
                 </script>
             </div>
@@ -366,6 +348,7 @@
                 ws.close();
             }
             clearInterval(ping_timer);
+            chat.innerHTML = '<p><em>Connecting to game...</em></p>';
 
             var scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(scheme + location.host + '/chat?game_id=' + encodeURIComponent(game_id.trim()));
@@ -776,7 +759,20 @@
             ws.send(JSON.stringify(msg));
         };
 
+        // the name and password fields may be filled in by the browser without any input events,
+        // so they are checked on click instead of enabling the buttons on key presses
+        function fields_missing(fields) {
+            if (fields.every(function (f) { return f.value.trim().length > 0; })) {
+                return false;
+            }
+            chat.innerHTML = '<p><em>Please fill in ' + fields.map(function (f) { return f.dataset.label; }).join(' and ') + '.</em></p>';
+            return true;
+        }
+
         join_game_send.onclick = function () {
+            if (fields_missing([game_id_text, name_text, password_text])) {
+                return;
+            }
             var msg = {
                 type: "JoinGame",
                 name: name_text.value,
@@ -789,6 +785,9 @@
         };
 
         new_game_send.onclick = function () {
+            if (fields_missing([new_name_text, new_password_text])) {
+                return;
+            }
             var msg = {
                 type: "NewGame",
                 name: new_name_text.value,

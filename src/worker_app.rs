@@ -121,10 +121,8 @@ async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     headers.set("Upgrade", "websocket")?;
     let mut init = RequestInit::new();
     init.with_headers(headers);
-    let forwarded = Request::new_with_init(
-        &format!("https://game/chat?game_id={}", game_id),
-        &init,
-    )?;
+    let forwarded =
+        Request::new_with_init(&format!("https://game/chat?game_id={}", game_id), &init)?;
     stub.fetch_with_request(forwarded).await
 }
 
@@ -177,7 +175,8 @@ impl GameRoom {
         match record {
             Some(r) => {
                 let next = r.timer_at.map_or(r.expires_at, |t| t.min(r.expires_at));
-                let json = serde_json::to_string(&r).map_err(|e| Error::RustError(e.to_string()))?;
+                let json =
+                    serde_json::to_string(&r).map_err(|e| Error::RustError(e.to_string()))?;
                 storage.put(STORAGE_KEY, json).await?;
                 storage
                     .set_alarm(ScheduledTime::from(next.saturating_sub(now_ms()) as i64))
@@ -250,8 +249,12 @@ impl GameRoom {
                     reject(ws, "the game id already exists");
                     return Ok(());
                 }
-                let mut game =
-                    Game::new(attachment.game_id.clone(), word_list, word_count, random_u64());
+                let mut game = Game::new(
+                    attachment.game_id.clone(),
+                    word_list,
+                    word_count,
+                    random_u64(),
+                );
                 let id = game
                     .join(name, password, &mut out)
                     .map_err(Error::RustError)?;
