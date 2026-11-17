@@ -7,38 +7,18 @@ extern crate serde_derive;
 
 use clap::{App, Arg};
 use justone::WordList;
-use slog::{Drain, Duplicate, Level, LevelFilter};
+use slog::{Drain, Level, LevelFilter};
 
 pub mod justone;
 pub mod server;
 
 #[tokio::main]
 async fn main() {
-    // set up logging to the screen and to the file
+    // log to the terminal only (warnings and errors); no log file
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
-
-    let log_path = "justone.log";
-    let file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .write(true)
-        .open(log_path)
-        .unwrap();
-
-    let decorator1 = slog_term::PlainDecorator::new(file);
-    let drain1 = slog_term::FullFormat::new(decorator1).build().fuse();
-    let drain1 = slog_async::Async::new(drain1).build().fuse();
-
-    let log = slog::Logger::root(
-        Duplicate::new(
-            LevelFilter::new(drain, Level::Info),
-            LevelFilter::new(drain1, Level::Debug),
-        )
-        .fuse(),
-        o!(),
-    );
+    let log = slog::Logger::root(LevelFilter::new(drain, Level::Warning).fuse(), o!());
 
     let _guard = slog_scope::set_global_logger(log);
     slog_scope::scope(&slog_scope::logger().new(slog_o!()), || start()).await;

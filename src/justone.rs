@@ -11,6 +11,8 @@ use tokio::time::sleep;
 pub enum WordList {
     #[serde(rename = "english")]
     English,
+    #[serde(rename = "dutch")]
+    Dutch,
     #[serde(rename = "hungarian")]
     Hungarian,
     #[serde(rename = "italian")]
@@ -82,11 +84,12 @@ pub struct JustOneGame {
 impl JustOneGame {
     pub fn read_word_list(word_list: WordList) -> Vec<String> {
         let filename = match word_list {
+            WordList::Dutch => "include/words_nl.txt",
             WordList::English => "include/words_en.txt",
+            WordList::French => "include/words_fr.txt",
+            WordList::German => "include/words_de.txt",
             WordList::Hungarian => "include/words_hu.txt",
             WordList::Italian => "include/words_it.txt",
-            WordList::German => "include/words_de.txt",
-            WordList::French => "include/words_fr.txt",
         };
 
         std::io::BufReader::new(File::open(filename).expect("Cannot open word list"))
